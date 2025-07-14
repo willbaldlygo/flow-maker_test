@@ -125,30 +125,6 @@ const AgentBuilderSidebar = memo(({ onAddNode }: AgentBuilderSidebarProps) => {
           );
         })}
       </div>
-
-      <div className="mt-8 p-4 bg-muted rounded-lg">
-        <h4 className="text-sm font-medium text-foreground mb-2">Quick Actions</h4>
-        <div className="space-y-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="w-full justify-start"
-            onClick={() => onAddNode('start')}
-          >
-            <Play className="w-4 h-4 mr-2" />
-            Add Start Node
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="w-full justify-start"
-            onClick={() => onAddNode('userInput')}
-          >
-            <MessageCircle className="w-4 h-4 mr-2" />
-            Add User Input
-          </Button>
-        </div>
-      </div>
     </div>
   );
 });
