@@ -79,6 +79,63 @@ const AgentBuilderSettings = memo(() => {
     }));
   };
 
+  // Get the current API key based on selected LLM
+  const getCurrentApiKey = () => {
+    switch (settings.defaultLLM) {
+      case 'gpt-4o':
+        return settings.apiKeys.openai;
+      case 'claude-sonnet':
+        return settings.apiKeys.anthropic;
+      case 'gemini-2.5-pro':
+        return settings.apiKeys.google;
+      default:
+        return '';
+    }
+  };
+
+  // Update the current API key based on selected LLM
+  const updateCurrentApiKey = (value: string) => {
+    switch (settings.defaultLLM) {
+      case 'gpt-4o':
+        updateApiKey('openai', value);
+        break;
+      case 'claude-sonnet':
+        updateApiKey('anthropic', value);
+        break;
+      case 'gemini-2.5-pro':
+        updateApiKey('google', value);
+        break;
+    }
+  };
+
+  // Get the appropriate placeholder for the current LLM
+  const getApiKeyPlaceholder = () => {
+    switch (settings.defaultLLM) {
+      case 'gpt-4o':
+        return 'sk-...';
+      case 'claude-sonnet':
+        return 'sk-ant-...';
+      case 'gemini-2.5-pro':
+        return 'AI...';
+      default:
+        return 'Enter API key';
+    }
+  };
+
+  // Get the provider name for the current LLM
+  const getProviderName = () => {
+    switch (settings.defaultLLM) {
+      case 'gpt-4o':
+        return 'OpenAI';
+      case 'claude-sonnet':
+        return 'Anthropic';
+      case 'gemini-2.5-pro':
+        return 'Google';
+      default:
+        return 'API';
+    }
+  };
+
   return (
     <div className="mt-6">
       <div className="flex items-center space-x-2 mb-3">
@@ -130,86 +187,31 @@ const AgentBuilderSettings = memo(() => {
           </Select>
         </div>
 
-        {/* API Keys for each model */}
-        <div className="space-y-3 pt-2 border-t border-border">
-          <Label className="text-xs font-medium text-muted-foreground">API Keys</Label>
-          
-          {/* OpenAI API Key */}
-          <div className="space-y-1">
-            <Label htmlFor="openai-key" className="text-xs">OpenAI</Label>
-            <div className="relative">
-              <Input
-                id="openai-key"
-                type={showApiKeys.openai ? "text" : "password"}
-                value={settings.apiKeys.openai}
-                onChange={(e) => updateApiKey('openai', e.target.value)}
-                placeholder="sk-..."
-                className="text-xs pr-8"
-              />
-              <button
-                type="button"
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                onClick={() => toggleApiKeyVisibility('openai')}
-              >
-                {showApiKeys.openai ? (
-                  <EyeOff className="w-3 h-3" />
-                ) : (
-                  <Eye className="w-3 h-3" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Anthropic API Key */}
-          <div className="space-y-1">
-            <Label htmlFor="anthropic-key" className="text-xs">Anthropic</Label>
-            <div className="relative">
-              <Input
-                id="anthropic-key"
-                type={showApiKeys.anthropic ? "text" : "password"}
-                value={settings.apiKeys.anthropic}
-                onChange={(e) => updateApiKey('anthropic', e.target.value)}
-                placeholder="sk-ant-..."
-                className="text-xs pr-8"
-              />
-              <button
-                type="button"
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                onClick={() => toggleApiKeyVisibility('anthropic')}
-              >
-                {showApiKeys.anthropic ? (
-                  <EyeOff className="w-3 h-3" />
-                ) : (
-                  <Eye className="w-3 h-3" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Google API Key */}
-          <div className="space-y-1">
-            <Label htmlFor="google-key" className="text-xs">Google</Label>
-            <div className="relative">
-              <Input
-                id="google-key"
-                type={showApiKeys.google ? "text" : "password"}
-                value={settings.apiKeys.google}
-                onChange={(e) => updateApiKey('google', e.target.value)}
-                placeholder="AI..."
-                className="text-xs pr-8"
-              />
-              <button
-                type="button"
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                onClick={() => toggleApiKeyVisibility('google')}
-              >
-                {showApiKeys.google ? (
-                  <EyeOff className="w-3 h-3" />
-                ) : (
-                  <Eye className="w-3 h-3" />
-                )}
-              </button>
-            </div>
+        {/* Dynamic API Key for Selected LLM */}
+        <div className="space-y-2">
+          <Label htmlFor="llm-api-key" className="text-xs font-medium">
+            {getProviderName()} API Key
+          </Label>
+          <div className="relative">
+            <Input
+              id="llm-api-key"
+              type={showApiKeys.openai ? "text" : "password"}
+              value={getCurrentApiKey()}
+              onChange={(e) => updateCurrentApiKey(e.target.value)}
+              placeholder={getApiKeyPlaceholder()}
+              className="text-xs pr-8"
+            />
+            <button
+              type="button"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              onClick={() => toggleApiKeyVisibility('openai')}
+            >
+              {showApiKeys.openai ? (
+                <EyeOff className="w-3 h-3" />
+              ) : (
+                <Eye className="w-3 h-3" />
+              )}
+            </button>
           </div>
         </div>
       </Card>
