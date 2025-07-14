@@ -228,10 +228,21 @@ All colors MUST be HSL.
   width: 16px;
   height: 16px;
   border: 3px solid hsl(var(--primary));
-  background: hsl(var(--background));
   border-radius: 50%;
   transition: var(--transition-smooth);
   cursor: pointer;
+}
+
+/* Input handles (top) - hollow with white background */
+.react-flow__handle.react-flow__handle-top {
+  background: white;
+  border: 3px solid hsl(var(--primary));
+}
+
+/* Output handles (bottom) - solid colored */
+.react-flow__handle.react-flow__handle-bottom {
+  background: hsl(var(--primary));
+  border: 3px solid hsl(var(--primary));
 }
 
 .react-flow__handle:hover {
