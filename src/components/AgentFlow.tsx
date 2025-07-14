@@ -1,5 +1,5 @@
 import '@xyflow/react/dist/style.css';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useEffect } from 'react';
 import {
   ReactFlow,
   Background,
@@ -26,6 +26,7 @@ import AgentToolNode from './nodes/AgentToolNode';
 import SplitterNode from './nodes/SplitterNode';
 import CollectorNode from './nodes/CollectorNode';
 import DecisionNode from './nodes/DecisionNode';
+import { Save, Check } from 'lucide-react';
 import AgentBuilderSidebar from './AgentBuilderSidebar';
 
 // Node types mapping
@@ -53,13 +54,60 @@ const initialNodes: Node[] = [
 
 const initialEdges: Edge[] = [];
 
+// Load saved graph from localStorage
+const loadSavedGraph = () => {
+  try {
+    const savedNodes = localStorage.getItem('agent-builder-nodes');
+    const savedEdges = localStorage.getItem('agent-builder-edges');
+    
+    if (savedNodes && savedEdges) {
+      return {
+        nodes: JSON.parse(savedNodes),
+        edges: JSON.parse(savedEdges)
+      };
+    }
+  } catch (error) {
+    console.error('Error loading saved graph:', error);
+  }
+  
+  return {
+    nodes: initialNodes,
+    edges: initialEdges
+  };
+};
+
+const savedGraph = loadSavedGraph();
+
 let nodeId = 2;
 
 const AgentFlowInner = () => {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState(savedGraph.nodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(savedGraph.edges);
+  const [isSaving, setIsSaving] = useState(false);
   const { screenToFlowPosition } = useReactFlow();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
+
+  // Auto-save to localStorage whenever nodes or edges change
+  useEffect(() => {
+    const saveGraph = async () => {
+      try {
+        setIsSaving(true);
+        localStorage.setItem('agent-builder-nodes', JSON.stringify(nodes));
+        localStorage.setItem('agent-builder-edges', JSON.stringify(edges));
+        
+        // Show saving indicator briefly
+        setTimeout(() => setIsSaving(false), 500);
+      } catch (error) {
+        console.error('Error saving graph:', error);
+        setIsSaving(false);
+      }
+    };
+
+    // Debounce saves to avoid too frequent localStorage writes
+    const timeoutId = setTimeout(saveGraph, 300);
+    
+    return () => clearTimeout(timeoutId);
+  }, [nodes, edges]);
 
   const onConnect = useCallback(
     (params: Connection) => {
@@ -125,7 +173,22 @@ const AgentFlowInner = () => {
   }, [setNodes]);
 
   return (
-    <div className="h-screen flex">
+    <div className="h-screen flex relative">
+      {/* Save Indicator */}
+      <div className="absolute top-4 right-4 z-50 flex items-center space-x-2 bg-card border border-border rounded-lg px-3 py-2 shadow-lg">
+        {isSaving ? (
+          <>
+            <Save className="w-4 h-4 text-primary animate-pulse" />
+            <span className="text-xs text-muted-foreground">Saving...</span>
+          </>
+        ) : (
+          <>
+            <Check className="w-4 h-4 text-green-500" />
+            <span className="text-xs text-muted-foreground">Saved</span>
+          </>
+        )}
+      </div>
+
       <AgentBuilderSidebar onAddNode={onAddNode} />
       
       <div className="flex-1" ref={reactFlowWrapper}>
