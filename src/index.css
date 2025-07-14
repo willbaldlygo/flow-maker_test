@@ -162,9 +162,11 @@ All colors MUST be HSL.
 
 /* Node Type Specific Styles */
 .node-start, .node-stop {
-  border-radius: 50%;
-  width: 80px;
-  height: 80px;
+  border-radius: 50% !important;
+  width: 80px !important;
+  height: 80px !important;
+  min-width: 80px !important;
+  min-height: 80px !important;
 }
 
 .node-start {
