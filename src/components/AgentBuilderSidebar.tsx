@@ -103,20 +103,20 @@ const AgentBuilderSidebar = memo(({ onAddNode }: AgentBuilderSidebarProps) => {
           return (
             <Card
               key={template.type}
-              className="p-3 cursor-grab active:cursor-grabbing border-border hover:border-primary/50 transition-colors"
+              className="p-2 cursor-grab active:cursor-grabbing border-border hover:border-primary/50 transition-colors"
               draggable
               onDragStart={(e) => onDragStart(e, template.type)}
               onClick={() => onAddNode(template.type)}
             >
-              <div className="flex items-start space-x-3">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <IconComponent className="w-4 h-4 text-primary" />
+              <div className="flex items-start space-x-2">
+                <div className="p-1.5 rounded-md bg-primary/10 flex-shrink-0">
+                  <IconComponent className="w-3.5 h-3.5 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-sm font-medium text-foreground truncate">
                     {template.label}
                   </h4>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground leading-tight">
                     {template.description}
                   </p>
                 </div>
