@@ -1,0 +1,35 @@
+import { memo } from 'react';
+import { Handle, Position } from '@xyflow/react';
+import { Merge } from 'lucide-react';
+
+interface CollectorNodeProps {
+  data: {
+    label?: string;
+    mergeType?: string;
+  };
+  selected?: boolean;
+}
+
+const CollectorNode = memo(({ data, selected }: CollectorNodeProps) => {
+  return (
+    <div className={`agent-node node-collector ${selected ? 'selected' : ''}`}>
+      <div className="node-content flex flex-col items-center justify-center text-white p-4 min-w-[140px]" style={{ transform: 'skewX(20deg)' }}>
+        <Merge className="w-5 h-5 mb-2" />
+        <span className="text-sm font-medium mb-2">{data.label || 'Collector'}</span>
+        <input 
+          type="text" 
+          placeholder={data.mergeType || 'Merge logic'}
+          className="w-full px-2 py-1 text-xs bg-white/20 border border-white/30 rounded text-white placeholder-white/60"
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
+      <Handle type="target" position={Position.Left} id="input1" style={{ top: '30%' }} />
+      <Handle type="target" position={Position.Left} id="input2" style={{ top: '70%' }} />
+      <Handle type="source" position={Position.Right} />
+    </div>
+  );
+});
+
+CollectorNode.displayName = 'CollectorNode';
+
+export default CollectorNode;

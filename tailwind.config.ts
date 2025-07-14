@@ -26,7 +26,8 @@ export default {
 				foreground: 'hsl(var(--foreground))',
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))'
+					foreground: 'hsl(var(--primary-foreground))',
+					glow: 'hsl(var(--primary-glow))'
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
@@ -52,6 +53,16 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				'flow-bg': 'hsl(var(--flow-bg))',
+				'node-start': 'hsl(var(--node-start))',
+				'node-stop': 'hsl(var(--node-stop))',
+				'node-input': 'hsl(var(--node-input))',
+				'node-llm': 'hsl(var(--node-llm))',
+				'node-agent': 'hsl(var(--node-agent))',
+				'node-tool': 'hsl(var(--node-tool))',
+				'node-splitter': 'hsl(var(--node-splitter))',
+				'node-collector': 'hsl(var(--node-collector))',
+				'node-decision': 'hsl(var(--node-decision))',
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
