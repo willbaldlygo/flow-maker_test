@@ -8,39 +8,39 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Core colors */
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
+    /* Core colors - Light Theme */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
 
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
 
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
 
     /* Agent Builder Brand Colors */
     --primary: 262 83% 58%;
     --primary-foreground: 0 0% 98%;
     --primary-glow: 262 100% 75%;
     
-    --secondary: 240 5.9% 10%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
 
-    --muted: 240 5.9% 10%;
-    --muted-foreground: 240 5% 64.9%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
 
-    --accent: 240 5.9% 10%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 5.9% 10%;
-    --input: 240 5.9% 10%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
     --ring: 262 83% 58%;
 
     /* Flow-specific colors */
-    --flow-bg: 240 10% 3.9%;
+    --flow-bg: 0 0% 100%;
     --node-start: 142 76% 36%;
     --node-stop: 0 84% 60%;
     --node-input: 217 91% 60%;
@@ -56,8 +56,8 @@ All colors MUST be HSL.
     --gradient-node: linear-gradient(135deg, hsl(var(--card)), hsl(var(--muted)));
     
     /* Shadows */
-    --shadow-node: 0 10px 30px -10px hsl(var(--primary) / 0.3);
-    --shadow-glow: 0 0 40px hsl(var(--primary-glow) / 0.4);
+    --shadow-node: 0 4px 20px -8px hsl(var(--primary) / 0.2);
+    --shadow-glow: 0 0 20px hsl(var(--primary-glow) / 0.3);
     
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -81,25 +81,26 @@ All colors MUST be HSL.
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
-  .light {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+  .dark {
+    /* Core colors - Dark Theme */
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
     --primary: 262 83% 58%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
+    --secondary: 240 5.9% 10%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 5.9% 10%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 5.9% 10%;
+    --accent-foreground: 0 0% 98%;
+    --border: 240 5.9% 10%;
+    --input: 240 5.9% 10%;
     --ring: 262 83% 58%;
-    --flow-bg: 0 0% 100%;
+    --flow-bg: 240 10% 3.9%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -132,17 +133,16 @@ All colors MUST be HSL.
 
 .react-flow__background .react-flow__background-pattern {
   stroke: hsl(var(--border));
-  opacity: 0.3;
+  opacity: 0.4;
 }
 
 /* Custom Node Styles */
 .agent-node {
   border-radius: var(--radius);
-  border: 2px solid transparent;
-  background: linear-gradient(135deg, hsl(var(--card)), hsl(var(--muted)));
+  border: 2px solid hsl(var(--border));
+  background: hsl(var(--card));
   box-shadow: var(--shadow-node);
   transition: var(--transition-smooth);
-  backdrop-filter: blur(10px);
   min-width: 120px;
   min-height: 60px;
   display: flex;
