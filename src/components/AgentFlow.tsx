@@ -69,8 +69,8 @@ const AgentFlowInner = () => {
         type: 'default',
         animated: false,
         style: {
-          strokeWidth: 4,
-          stroke: 'hsl(var(--primary))'
+          strokeWidth: 2,
+          stroke: 'hsl(var(--muted-foreground))'
         }
       };
       setEdges((eds) => addEdge(newEdge, eds));
@@ -144,8 +144,8 @@ const AgentFlowInner = () => {
             type: 'default',
             animated: false,
             style: {
-              strokeWidth: 4,
-              stroke: 'hsl(var(--primary))'
+              strokeWidth: 2,
+              stroke: 'hsl(var(--muted-foreground))'
             }
           }}
         >

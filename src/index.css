@@ -166,53 +166,52 @@ All colors MUST be HSL.
   border-radius: 50%;
   width: 80px;
   height: 80px;
+  background: hsl(var(--card));
 }
 
 .node-start {
-  background: linear-gradient(135deg, hsl(var(--node-start)), hsl(var(--node-start) / 0.8));
   border-color: hsl(var(--node-start));
 }
 
 .node-stop {
-  background: linear-gradient(135deg, hsl(var(--node-stop)), hsl(var(--node-stop) / 0.8));
   border-color: hsl(var(--node-stop));
 }
 
 .node-input {
-  background: linear-gradient(135deg, hsl(var(--node-input)), hsl(var(--node-input) / 0.8));
   border-color: hsl(var(--node-input));
+  background: hsl(var(--card));
 }
 
 .node-llm {
-  background: linear-gradient(135deg, hsl(var(--node-llm)), hsl(var(--node-llm) / 0.8));
   border-color: hsl(var(--node-llm));
+  background: hsl(var(--card));
 }
 
 .node-agent {
-  background: linear-gradient(135deg, hsl(var(--node-agent)), hsl(var(--node-agent) / 0.8));
   border-color: hsl(var(--node-agent));
+  background: hsl(var(--card));
 }
 
 .node-tool {
-  background: linear-gradient(135deg, hsl(var(--node-tool)), hsl(var(--node-tool) / 0.8));
   border-color: hsl(var(--node-tool));
+  background: hsl(var(--card));
   border-radius: 2rem;
 }
 
 .node-splitter, .node-collector {
-  background: linear-gradient(135deg, hsl(var(--node-splitter)), hsl(var(--node-splitter) / 0.8));
   border-color: hsl(var(--node-splitter));
+  background: hsl(var(--card));
   transform: skewX(-20deg);
 }
 
 .node-collector {
-  background: linear-gradient(135deg, hsl(var(--node-collector)), hsl(var(--node-collector) / 0.8));
   border-color: hsl(var(--node-collector));
+  background: hsl(var(--card));
 }
 
 .node-decision {
-  background: linear-gradient(135deg, hsl(var(--node-decision)), hsl(var(--node-decision) / 0.8));
   border-color: hsl(var(--node-decision));
+  background: hsl(var(--card));
   transform: rotate(45deg);
   width: 100px;
   height: 100px;
@@ -246,14 +245,14 @@ All colors MUST be HSL.
 
 /* Edge Styles */
 .react-flow__edge-path {
-  stroke: hsl(var(--primary));
-  stroke-width: 4;
+  stroke: hsl(var(--muted-foreground));
+  stroke-width: 2;
   fill: none;
 }
 
 .react-flow__edge.selected .react-flow__edge-path {
-  stroke: hsl(var(--primary-glow));
-  stroke-width: 5;
+  stroke: hsl(var(--primary));
+  stroke-width: 2;
 }
 
 .react-flow__edge .react-flow__edge-path {

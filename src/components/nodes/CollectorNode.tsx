@@ -13,13 +13,13 @@ interface CollectorNodeProps {
 const CollectorNode = memo(({ data, selected }: CollectorNodeProps) => {
   return (
     <div className={`agent-node node-collector ${selected ? 'selected' : ''}`}>
-      <div className="node-content flex flex-col items-center justify-center text-white p-4 min-w-[140px]" style={{ transform: 'skewX(20deg)' }}>
+      <div className="node-content flex flex-col items-center justify-center text-foreground p-4 min-w-[140px]" style={{ transform: 'skewX(20deg)' }}>
         <Merge className="w-5 h-5 mb-2" />
         <span className="text-sm font-medium mb-2">{data.label || 'Collector'}</span>
         <input 
           type="text" 
           placeholder={data.mergeType || 'Merge logic'}
-          className="w-full px-2 py-1 text-xs bg-white/20 border border-white/30 rounded text-white placeholder-white/60"
+          className="w-full px-2 py-1 text-xs bg-muted border border-border rounded text-foreground placeholder-muted-foreground"
           onClick={(e) => e.stopPropagation()}
         />
       </div>

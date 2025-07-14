@@ -13,7 +13,7 @@ interface DecisionNodeProps {
 const DecisionNode = memo(({ data, selected }: DecisionNodeProps) => {
   return (
     <div className={`agent-node node-decision ${selected ? 'selected' : ''}`}>
-      <div className="node-content flex flex-col items-center justify-center text-white text-center">
+      <div className="node-content flex flex-col items-center justify-center text-foreground text-center">
         <GitBranch className="w-4 h-4 mb-1" />
         <span className="text-xs font-medium">{data.label || 'Decision'}</span>
       </div>
