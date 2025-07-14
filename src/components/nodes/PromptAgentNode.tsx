@@ -1,8 +1,9 @@
 import { memo } from 'react';
-import { Handle, Position } from '@xyflow/react';
+import { Handle, Position, useReactFlow } from '@xyflow/react';
 import { Bot } from 'lucide-react';
 
 interface PromptAgentNodeProps {
+  id: string;
   data: {
     label?: string;
     agentType?: string;
@@ -11,7 +12,29 @@ interface PromptAgentNodeProps {
   selected?: boolean;
 }
 
-const PromptAgentNode = memo(({ data, selected }: PromptAgentNodeProps) => {
+const PromptAgentNode = memo(({ id, data, selected }: PromptAgentNodeProps) => {
+  const { setNodes } = useReactFlow();
+
+  const handleAgentTypeChange = (value: string) => {
+    setNodes((nodes) =>
+      nodes.map((node) =>
+        node.id === id
+          ? { ...node, data: { ...node.data, agentType: value } }
+          : node
+      )
+    );
+  };
+
+  const handleSystemPromptChange = (value: string) => {
+    setNodes((nodes) =>
+      nodes.map((node) =>
+        node.id === id
+          ? { ...node, data: { ...node.data, systemPrompt: value } }
+          : node
+      )
+    );
+  };
+
   return (
     <div className={`agent-node node-agent ${selected ? 'selected' : ''}`}>
       <div className="node-content flex flex-col items-center justify-center text-foreground p-4 min-w-[180px]">
@@ -20,14 +43,18 @@ const PromptAgentNode = memo(({ data, selected }: PromptAgentNodeProps) => {
         <div className="w-full space-y-1">
           <input 
             type="text" 
-            placeholder={data.agentType || 'Agent type'}
+            value={data.agentType || ''}
+            placeholder="Agent type"
             className="w-full px-2 py-1 text-xs bg-muted border border-border rounded text-foreground placeholder-muted-foreground"
+            onChange={(e) => handleAgentTypeChange(e.target.value)}
             onClick={(e) => e.stopPropagation()}
           />
           <textarea 
-            placeholder={data.systemPrompt || 'System prompt...'}
+            value={data.systemPrompt || ''}
+            placeholder="System prompt..."
             rows={2}
             className="w-full px-2 py-1 text-xs bg-muted border border-border rounded text-foreground placeholder-muted-foreground resize-none"
+            onChange={(e) => handleSystemPromptChange(e.target.value)}
             onClick={(e) => e.stopPropagation()}
           />
         </div>
