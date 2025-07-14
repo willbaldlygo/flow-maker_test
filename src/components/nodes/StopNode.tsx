@@ -12,8 +12,8 @@ interface StopNodeProps {
 const StopNode = memo(({ data, selected }: StopNodeProps) => {
   return (
     <div className={`agent-node node-stop ${selected ? 'selected' : ''}`}>
-      <div className="node-content flex flex-col items-center justify-center text-foreground">
-        <Square className="w-6 h-6 mb-1" />
+      <div className="node-content flex flex-col items-center justify-center text-white">
+        <Square className="w-6 h-6 mb-1" fill="currentColor" />
         <span className="text-xs font-medium">{data.label || 'Stop'}</span>
       </div>
       <Handle type="target" position={Position.Top} />
