@@ -16,7 +16,7 @@ const StopNode = memo(({ data, selected }: StopNodeProps) => {
         <Square className="w-6 h-6 mb-1" fill="currentColor" />
         <span className="text-xs font-medium">{data.label || 'Stop'}</span>
       </div>
-      <Handle type="target" position={Position.Left} />
+      <Handle type="target" position={Position.Top} />
     </div>
   );
 });

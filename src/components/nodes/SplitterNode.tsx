@@ -23,9 +23,9 @@ const SplitterNode = memo(({ data, selected }: SplitterNodeProps) => {
           onClick={(e) => e.stopPropagation()}
         />
       </div>
-      <Handle type="target" position={Position.Left} />
-      <Handle type="source" position={Position.Right} id="output1" style={{ top: '30%' }} />
-      <Handle type="source" position={Position.Right} id="output2" style={{ top: '70%' }} />
+      <Handle type="target" position={Position.Top} />
+      <Handle type="source" position={Position.Bottom} id="output1" style={{ left: '30%' }} />
+      <Handle type="source" position={Position.Bottom} id="output2" style={{ left: '70%' }} />
     </div>
   );
 });

@@ -67,11 +67,15 @@ const AgentFlowInner = () => {
         ...params,
         id: `edge-${params.source}-${params.target}`,
         type: 'smoothstep',
-        animated: true,
+        animated: false,
+        style: {
+          strokeWidth: 4,
+          stroke: 'hsl(var(--primary))'
+        },
         markerEnd: {
           type: MarkerType.ArrowClosed,
-          width: 20,
-          height: 20,
+          width: 24,
+          height: 24,
         }
       };
       setEdges((eds) => addEdge(newEdge, eds));
@@ -143,9 +147,15 @@ const AgentFlowInner = () => {
           className="bg-flow-bg"
           defaultEdgeOptions={{
             type: 'smoothstep',
-            animated: true,
+            animated: false,
+            style: {
+              strokeWidth: 4,
+              stroke: 'hsl(var(--primary))'
+            },
             markerEnd: {
               type: MarkerType.ArrowClosed,
+              width: 24,
+              height: 24,
             }
           }}
         >

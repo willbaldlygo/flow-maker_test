@@ -32,8 +32,8 @@ const PromptAgentNode = memo(({ data, selected }: PromptAgentNodeProps) => {
           />
         </div>
       </div>
-      <Handle type="target" position={Position.Left} />
-      <Handle type="source" position={Position.Right} />
+      <Handle type="target" position={Position.Top} />
+      <Handle type="source" position={Position.Bottom} />
     </div>
   );
 });

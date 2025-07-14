@@ -23,9 +23,9 @@ const CollectorNode = memo(({ data, selected }: CollectorNodeProps) => {
           onClick={(e) => e.stopPropagation()}
         />
       </div>
-      <Handle type="target" position={Position.Left} id="input1" style={{ top: '30%' }} />
-      <Handle type="target" position={Position.Left} id="input2" style={{ top: '70%' }} />
-      <Handle type="source" position={Position.Right} />
+      <Handle type="target" position={Position.Top} id="input1" style={{ left: '30%' }} />
+      <Handle type="target" position={Position.Top} id="input2" style={{ left: '70%' }} />
+      <Handle type="source" position={Position.Bottom} />
     </div>
   );
 });

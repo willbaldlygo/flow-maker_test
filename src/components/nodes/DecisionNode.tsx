@@ -17,9 +17,9 @@ const DecisionNode = memo(({ data, selected }: DecisionNodeProps) => {
         <GitBranch className="w-4 h-4 mb-1" />
         <span className="text-xs font-medium">{data.label || 'Decision'}</span>
       </div>
-      <Handle type="target" position={Position.Left} style={{ transform: 'rotate(-45deg)', left: '-6px', top: '50%' }} />
-      <Handle type="source" position={Position.Top} id="true" style={{ transform: 'rotate(-45deg)', left: '50%', top: '-6px' }} />
-      <Handle type="source" position={Position.Bottom} id="false" style={{ transform: 'rotate(-45deg)', left: '50%', bottom: '-6px' }} />
+      <Handle type="target" position={Position.Top} style={{ transform: 'rotate(-45deg)', left: '50%', top: '-8px' }} />
+      <Handle type="source" position={Position.Bottom} id="true" style={{ transform: 'rotate(-45deg)', left: '30%', bottom: '-8px' }} />
+      <Handle type="source" position={Position.Bottom} id="false" style={{ transform: 'rotate(-45deg)', left: '70%', bottom: '-8px' }} />
     </div>
   );
 });

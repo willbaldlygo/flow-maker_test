@@ -16,7 +16,7 @@ const StartNode = memo(({ data, selected }: StartNodeProps) => {
         <Play className="w-6 h-6 mb-1" fill="currentColor" />
         <span className="text-xs font-medium">{data.label || 'Start'}</span>
       </div>
-      <Handle type="source" position={Position.Right} />
+      <Handle type="source" position={Position.Bottom} />
     </div>
   );
 });
