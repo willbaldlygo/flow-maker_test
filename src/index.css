@@ -233,20 +233,21 @@ All colors MUST be HSL.
   cursor: pointer;
 }
 
-/* Input handles (top) - hollow with white background */
-.react-flow__handle.react-flow__handle-top {
-  background: white;
-  border: 3px solid hsl(var(--primary));
+/* Input handles (target type, usually top) - hollow with white background */
+.react-flow__handle[data-handlepos="top"],
+.react-flow__handle.target {
+  background: white !important;
+  border: 3px solid hsl(var(--primary)) !important;
 }
 
-/* Output handles (bottom) - solid colored */
-.react-flow__handle.react-flow__handle-bottom {
-  background: hsl(var(--primary));
-  border: 3px solid hsl(var(--primary));
+/* Output handles (source type, usually bottom) - solid colored */
+.react-flow__handle[data-handlepos="bottom"],
+.react-flow__handle.source {
+  background: hsl(var(--primary)) !important;
+  border: 3px solid hsl(var(--primary)) !important;
 }
 
 .react-flow__handle:hover {
-  background: hsl(var(--primary));
   border-width: 4px;
   border-color: hsl(var(--primary-glow));
 }
