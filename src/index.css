@@ -170,12 +170,12 @@ All colors MUST be HSL.
 }
 
 .node-start {
-  background: linear-gradient(135deg, hsl(var(--node-start)), hsl(var(--node-start) / 0.85));
+  background: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 50%));
   border-color: hsl(var(--node-start));
 }
 
 .node-stop {
-  background: linear-gradient(135deg, hsl(var(--node-stop)), hsl(var(--node-stop) / 0.85));
+  background: linear-gradient(135deg, hsl(0 84% 60%), hsl(0 84% 75%));
   border-color: hsl(var(--node-stop));
 }
 
