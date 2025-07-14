@@ -71,11 +71,6 @@ const AgentFlowInner = () => {
         style: {
           strokeWidth: 4,
           stroke: 'hsl(var(--primary))'
-        },
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          width: 24,
-          height: 24,
         }
       };
       setEdges((eds) => addEdge(newEdge, eds));
@@ -151,11 +146,6 @@ const AgentFlowInner = () => {
             style: {
               strokeWidth: 4,
               stroke: 'hsl(var(--primary))'
-            },
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-              width: 24,
-              height: 24,
             }
           }}
         >
