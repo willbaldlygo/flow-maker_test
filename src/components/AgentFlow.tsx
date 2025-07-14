@@ -66,7 +66,7 @@ const AgentFlowInner = () => {
       const newEdge: Edge = {
         ...params,
         id: `edge-${params.source}-${params.target}`,
-        type: 'smoothstep',
+        type: 'default',
         animated: false,
         style: {
           strokeWidth: 4,
@@ -146,7 +146,7 @@ const AgentFlowInner = () => {
           fitView
           className="bg-flow-bg"
           defaultEdgeOptions={{
-            type: 'smoothstep',
+            type: 'default',
             animated: false,
             style: {
               strokeWidth: 4,
