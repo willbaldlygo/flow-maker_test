@@ -12,6 +12,7 @@ import {
   Merge, 
   GitBranch 
 } from 'lucide-react';
+import AgentBuilderSettings from './AgentBuilderSettings';
 
 interface NodeTemplate {
   type: string;
@@ -125,6 +126,8 @@ const AgentBuilderSidebar = memo(({ onAddNode }: AgentBuilderSidebarProps) => {
           );
         })}
       </div>
+
+      <AgentBuilderSettings />
     </div>
   );
 });
