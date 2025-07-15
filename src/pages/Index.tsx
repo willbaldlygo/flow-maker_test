@@ -9,7 +9,7 @@ const Index = () => {
   return (
     <div className="h-screen w-full flex flex-col">
       {/* Tab Header */}
-      <div className="flex border-b border-border bg-card h-12">
+      <div className="flex border-b border-border bg-card h-14">
         <Button
           variant={activeTab === 'edit' ? 'default' : 'ghost'}
           onClick={() => setActiveTab('edit')}
@@ -27,7 +27,7 @@ const Index = () => {
       </div>
 
       {/* Tab Content */}
-      <div style={{ height: 'calc(100vh - 3rem)' }}>
+      <div style={{ height: 'calc(100vh - 3.5rem)' }}>
         {activeTab === 'edit' ? <AgentFlow /> : <RunView />}
       </div>
     </div>
