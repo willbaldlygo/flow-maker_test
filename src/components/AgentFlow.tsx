@@ -227,6 +227,13 @@ const AgentFlowInner = () => {
     localStorage.removeItem('agent-builder-nodes');
     localStorage.removeItem('agent-builder-edges');
     localStorage.removeItem('agent-builder-settings');
+    
+    // Clear all agent tool configurations
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('agent-tool-config-')) {
+        localStorage.removeItem(key);
+      }
+    });
   }, [setNodes, setEdges]);
 
   return (

@@ -1,9 +1,10 @@
 import { memo, useState, useEffect } from 'react';
-import { Handle, Position } from '@xyflow/react';
+import { Handle, Position, useReactFlow } from '@xyflow/react';
 import { Wrench } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 interface AgentToolNodeProps {
+  id: string;
   data: {
     label?: string;
     toolType?: string;
@@ -22,11 +23,57 @@ interface LlamaCloudPipeline {
   name: string;
 }
 
-const AgentToolNode = memo(({ data, selected }: AgentToolNodeProps) => {
+const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
+  const { setNodes } = useReactFlow();
   const [toolType, setToolType] = useState<string>(data.toolType || '');
   const [selectedIndex, setSelectedIndex] = useState<string>(data.config || '');
   const [pipelines, setPipelines] = useState<LlamaCloudPipeline[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // Load configuration from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedConfig = localStorage.getItem(`agent-tool-config-${id}`);
+      if (savedConfig) {
+        const config = JSON.parse(savedConfig);
+        setToolType(config.toolType || '');
+        setSelectedIndex(config.selectedIndex || '');
+      }
+    } catch (error) {
+      console.error('Error loading agent tool config:', error);
+    }
+  }, [id]);
+  
+  // Save configuration to localStorage and update node data
+  const saveConfig = (newToolType: string, newSelectedIndex: string) => {
+    try {
+      const config = {
+        toolType: newToolType,
+        selectedIndex: newSelectedIndex
+      };
+      
+      // Save to localStorage
+      localStorage.setItem(`agent-tool-config-${id}`, JSON.stringify(config));
+      
+      // Update node data in the flow graph
+      setNodes((nodes) =>
+        nodes.map((node) =>
+          node.id === id
+            ? {
+                ...node,
+                data: {
+                  ...node.data,
+                  toolType: newToolType,
+                  config: newSelectedIndex
+                }
+              }
+            : node
+        )
+      );
+    } catch (error) {
+      console.error('Error saving agent tool config:', error);
+    }
+  };
   
   // Get API key from settings
   const getApiKey = () => {
@@ -91,13 +138,25 @@ const AgentToolNode = memo(({ data, selected }: AgentToolNodeProps) => {
     fetchLlamaCloudData();
   }, [toolType, apiKey]);
 
+  // Handle tool type change
+  const handleToolTypeChange = (newToolType: string) => {
+    setToolType(newToolType);
+    saveConfig(newToolType, selectedIndex);
+  };
+
+  // Handle index selection change
+  const handleIndexChange = (newIndex: string) => {
+    setSelectedIndex(newIndex);
+    saveConfig(toolType, newIndex);
+  };
+
   return (
     <div className={`agent-node node-tool ${selected ? 'selected' : ''}`}>
       <div className="node-content flex flex-col items-center justify-center text-foreground p-4 min-w-[160px]">
         <Wrench className="w-5 h-5 mb-2" />
         <span className="text-sm font-medium mb-2">{data.label || 'Agent Tool'}</span>
         <div className="w-full space-y-2">
-          <Select value={toolType} onValueChange={setToolType}>
+          <Select value={toolType} onValueChange={handleToolTypeChange}>
             <SelectTrigger className="w-full h-7 text-xs">
               <SelectValue placeholder="Select tool type" />
             </SelectTrigger>
@@ -107,7 +166,7 @@ const AgentToolNode = memo(({ data, selected }: AgentToolNodeProps) => {
           </Select>
           
           {toolType === 'llamacloud-index' && (
-            <Select value={selectedIndex} onValueChange={setSelectedIndex} disabled={loading || !apiKey}>
+            <Select value={selectedIndex} onValueChange={handleIndexChange} disabled={loading || !apiKey}>
               <SelectTrigger className="w-full h-7 text-xs">
                 <SelectValue placeholder={
                   loading ? "Loading..." : 
