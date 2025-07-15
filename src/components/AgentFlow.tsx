@@ -87,6 +87,21 @@ const AgentFlowInner = () => {
   const { screenToFlowPosition } = useReactFlow();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
 
+  // Handle delete key presses
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        // Delete selected nodes
+        setNodes((nds) => nds.filter((node) => !node.selected));
+        // Delete selected edges
+        setEdges((eds) => eds.filter((edge) => !edge.selected));
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [setNodes, setEdges]);
+
   // Auto-save to localStorage whenever nodes or edges change
   useEffect(() => {
     const saveGraph = async () => {
