@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { 
   Play, 
   Square, 
@@ -12,9 +13,12 @@ import {
   Merge, 
   GitBranch,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Settings,
+  Blocks
 } from 'lucide-react';
 import AgentBuilderSettings from './AgentBuilderSettings';
+import { SettingsData } from './AgentBuilderSettings';
 
 interface NodeTemplate {
   type: string;
@@ -80,8 +84,6 @@ const nodeTemplates: NodeTemplate[] = [
   }
 ];
 
-import { SettingsData } from './AgentBuilderSettings';
-
 interface AgentBuilderSidebarProps {
   onAddNode: (type: string) => void;
   onReset: () => void;
@@ -104,62 +106,92 @@ const AgentBuilderSidebar = memo(({ onAddNode, onReset, settings, onUpdateSettin
         </p>
       </div>
 
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-foreground mb-3">Components</h3>
-        {nodeTemplates.map((template) => {
-          const IconComponent = template.icon;
-          return (
-            <Card
-              key={template.type}
-              className="p-2 cursor-grab active:cursor-grabbing border-border hover:border-primary/50 transition-colors"
-              draggable
-              onDragStart={(e) => onDragStart(e, template.type)}
-              onClick={() => onAddNode(template.type)}
-            >
-              <div className="flex items-start space-x-2">
-                <div className="p-1.5 rounded-md bg-primary/10 flex-shrink-0">
-                  <IconComponent className="w-3.5 h-3.5 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-medium text-foreground truncate">
-                    {template.label}
-                  </h4>
-                  <p className="text-xs text-muted-foreground leading-tight">
-                    {template.description}
+      <Accordion type="multiple" defaultValue={["components", "settings"]} className="w-full">
+        {/* Components Section */}
+        <AccordionItem value="components">
+          <AccordionTrigger className="text-sm font-semibold hover:no-underline">
+            <div className="flex items-center space-x-2">
+              <Blocks className="w-4 h-4 text-primary" />
+              <span>Components</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="space-y-3 pt-2">
+              {nodeTemplates.map((template) => {
+                const IconComponent = template.icon;
+                return (
+                  <Card
+                    key={template.type}
+                    className="p-2 cursor-grab active:cursor-grabbing border-border hover:border-primary/50 transition-colors"
+                    draggable
+                    onDragStart={(e) => onDragStart(e, template.type)}
+                    onClick={() => onAddNode(template.type)}
+                  >
+                    <div className="flex items-start space-x-2">
+                      <div className="p-1.5 rounded-md bg-primary/10 flex-shrink-0">
+                        <IconComponent className="w-3.5 h-3.5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-medium text-foreground truncate">
+                          {template.label}
+                        </h4>
+                        <p className="text-xs text-muted-foreground leading-tight">
+                          {template.description}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Settings Section */}
+        <AccordionItem value="settings">
+          <AccordionTrigger className="text-sm font-semibold hover:no-underline">
+            <div className="flex items-center space-x-2">
+              <Settings className="w-4 h-4 text-primary" />
+              <span>Settings</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="pt-2">
+              <AgentBuilderSettings settings={settings} onUpdateSettings={onUpdateSettings} />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Danger Zone Section */}
+        <AccordionItem value="danger-zone">
+          <AccordionTrigger className="text-sm font-semibold hover:no-underline">
+            <div className="flex items-center space-x-2">
+              <AlertTriangle className="w-4 h-4 text-destructive" />
+              <span>Danger Zone</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="pt-2">
+              <Card className="p-3 border-destructive/20 bg-destructive/5">
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    This will permanently delete all nodes, connections, and settings.
                   </p>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={onReset}
+                    className="w-full"
+                  >
+                    <Trash2 className="w-3 h-3 mr-2" />
+                    Reset Everything
+                  </Button>
                 </div>
-              </div>
-            </Card>
-          );
-        })}
-      </div>
-
-      <AgentBuilderSettings settings={settings} onUpdateSettings={onUpdateSettings} />
-
-      {/* Danger Zone */}
-      <div className="mt-6">
-        <div className="flex items-center space-x-2 mb-3">
-          <AlertTriangle className="w-4 h-4 text-destructive" />
-          <h3 className="text-sm font-semibold text-foreground">Danger Zone</h3>
-        </div>
-
-        <Card className="p-3 border-destructive/20 bg-destructive/5">
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground">
-              This will permanently delete all nodes, connections, and settings.
-            </p>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={onReset}
-              className="w-full"
-            >
-              <Trash2 className="w-3 h-3 mr-2" />
-              Reset Everything
-            </Button>
-          </div>
-        </Card>
-      </div>
+              </Card>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 });
