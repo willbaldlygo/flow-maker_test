@@ -131,12 +131,13 @@ const PromptAgentNode = memo(({ id, data, selected }: PromptAgentNodeProps) => {
         type="source" 
         position={Position.Right} 
         style={{ 
-          width: '8px', 
-          height: '8px', 
+          width: '12px', 
+          height: '12px', 
           borderRadius: '0', 
           transform: 'rotate(45deg)',
           backgroundColor: 'var(--handle-background-color-default)',
-          border: '1px solid var(--handle-border-color-default)'
+          border: '1px solid var(--handle-border-color-default)',
+          right: '-6px'
         }} 
       />
     </div>
