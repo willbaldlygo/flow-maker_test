@@ -181,11 +181,16 @@ const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
           </Select>
           
           {toolType === 'llamacloud-index' && (
-            <Select value={selectedIndex} onValueChange={handleIndexChange} disabled={loading || !apiKey}>
+            <Select 
+              value={pipelines.length > 0 ? selectedIndex : ""} 
+              onValueChange={handleIndexChange} 
+              disabled={loading || !apiKey}
+            >
               <SelectTrigger className="w-full h-7 text-xs">
                 <SelectValue placeholder={
                   loading ? "Loading..." : 
                   !apiKey ? "No API key configured" : 
+                  pipelines.length === 0 ? "No indexes found" :
                   "Select index"
                 } />
               </SelectTrigger>
