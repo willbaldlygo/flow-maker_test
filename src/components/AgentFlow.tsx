@@ -78,14 +78,19 @@ const loadSavedGraph = () => {
 
 const savedGraph = loadSavedGraph();
 
-let nodeId = 2;
-
 const AgentFlowInner = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState(savedGraph.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(savedGraph.edges);
   const [isSaving, setIsSaving] = useState(false);
   const { screenToFlowPosition } = useReactFlow();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
+
+  // Generate unique node ID based on existing nodes
+  const generateNodeId = useCallback(() => {
+    const existingIds = nodes.map(node => parseInt(node.id)).filter(id => !isNaN(id));
+    const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
+    return (maxId + 1).toString();
+  }, [nodes]);
 
   // Handle delete key presses
   useEffect(() => {
@@ -161,7 +166,7 @@ const AgentFlowInner = () => {
       });
 
       const newNode: Node = {
-        id: `${nodeId++}`,
+        id: generateNodeId(),
         type,
         position,
         data: { 
@@ -171,13 +176,13 @@ const AgentFlowInner = () => {
 
       setNodes((nds) => nds.concat(newNode));
     },
-    [screenToFlowPosition, setNodes]
+    [screenToFlowPosition, setNodes, generateNodeId]
   );
 
   const onAddNode = useCallback((type: string) => {
     const position = { x: Math.random() * 400 + 200, y: Math.random() * 400 + 200 };
     const newNode: Node = {
-      id: `${nodeId++}`,
+      id: generateNodeId(),
       type,
       position,
       data: { 
@@ -185,7 +190,7 @@ const AgentFlowInner = () => {
       }
     };
     setNodes((nds) => nds.concat(newNode));
-  }, [setNodes]);
+  }, [setNodes, generateNodeId]);
 
   const onReset = useCallback(() => {
     // Clear the graph
