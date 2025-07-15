@@ -87,6 +87,11 @@ const AgentFlowInner = () => {
   const { screenToFlowPosition } = useReactFlow();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
 
+  // onUpdateSettings sets the settings
+  const onUpdateSettings = (newSettings: SettingsData) => {
+    setSettings(newSettings);
+  };
+
   // Load settings from localStorage on mount
   useEffect(() => {
     try {
@@ -263,7 +268,7 @@ const AgentFlowInner = () => {
         )}
       </div>
 
-      <AgentBuilderSidebar onAddNode={onAddNode} onReset={onReset} settings={settings} onUpdateSettings={setSettings} />
+      <AgentBuilderSidebar onAddNode={onAddNode} onReset={onReset} settings={settings} onUpdateSettings={onUpdateSettings} />
       
       <div className="flex-1" ref={reactFlowWrapper}>
         <ReactFlow
