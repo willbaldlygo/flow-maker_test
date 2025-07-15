@@ -137,7 +137,9 @@ const PromptAgentNode = memo(({ id, data, selected }: PromptAgentNodeProps) => {
           transform: 'rotate(45deg)',
           backgroundColor: 'var(--handle-background-color-default)',
           border: '1px solid var(--handle-border-color-default)',
-          right: '-6px'
+          right: '-6px',
+          top: '50%',
+          marginTop: '-6px'
         }} 
       />
     </div>
