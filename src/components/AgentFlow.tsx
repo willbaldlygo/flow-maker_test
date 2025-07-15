@@ -119,6 +119,16 @@ const AgentFlowInner = () => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Delete' || event.key === 'Backspace') {
+        // Don't delete nodes if user is editing text in an input or textarea
+        const activeElement = document.activeElement as HTMLElement;
+        if (activeElement && (
+          activeElement.tagName === 'INPUT' || 
+          activeElement.tagName === 'TEXTAREA' ||
+          activeElement.isContentEditable
+        )) {
+          return;
+        }
+        
         // Delete selected nodes
         setNodes((nds) => nds.filter((node) => !node.selected));
         // Delete selected edges
