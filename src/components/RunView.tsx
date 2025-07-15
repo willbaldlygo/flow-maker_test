@@ -71,7 +71,7 @@ const RunViewInner = () => {
   }, [setNodes, setEdges]);
 
   return (
-    <div className="h-screen flex relative">
+    <div className="h-full flex relative">
       <RunSidebar />
       
       <div className="flex-1">

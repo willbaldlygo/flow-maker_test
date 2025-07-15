@@ -247,7 +247,7 @@ const AgentFlowInner = () => {
   }, [setNodes, setEdges]);
 
   return (
-    <div className="h-screen flex relative">
+    <div className="h-full flex relative">
       {/* Save Indicator */}
       <div className="absolute top-4 right-4 z-50 flex items-center space-x-2 bg-card border border-border rounded-lg px-3 py-2 shadow-lg">
         {isSaving ? (
