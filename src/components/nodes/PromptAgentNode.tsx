@@ -66,7 +66,7 @@ const PromptAgentNode = memo(({ id, data, selected }: PromptAgentNodeProps) => {
   return (
     <div className={`agent-node node-agent ${selected ? 'selected' : ''}`}>
       <div 
-        className={`node-content flex flex-col items-center justify-center text-foreground p-4 ${isEditing ? 'min-w-[400px] min-h-[300px]' : 'min-w-[180px]'}`}
+        className={`node-content flex flex-col items-center justify-center text-foreground p-4 min-w-[180px] max-w-[200px] ${isEditing ? 'min-h-[300px]' : ''}`}
         onClick={!isEditing ? handleNodeClick : undefined}
       >
         <Bot className="w-5 h-5 mb-2" />
