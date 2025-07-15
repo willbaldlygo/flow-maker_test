@@ -32,8 +32,22 @@ const AgentToolNode = memo(({ data, selected }: AgentToolNodeProps) => {
           />
         </div>
       </div>
-      <Handle type="target" position={Position.Top} />
-      <Handle type="source" position={Position.Bottom} />
+      <Handle 
+        type="target" 
+        position={Position.Left} 
+        id="input"
+        style={{ 
+          width: '12px', 
+          height: '12px', 
+          borderRadius: '0', 
+          transform: 'rotate(45deg)',
+          backgroundColor: 'white',
+          border: '2px solid var(--handle-border-color-default)',
+          left: '-6px',
+          top: '50%',
+          marginTop: '-6px'
+        }} 
+      />
     </div>
   );
 });
