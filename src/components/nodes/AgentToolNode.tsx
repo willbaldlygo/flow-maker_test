@@ -50,7 +50,7 @@ const AgentToolNode = memo(({ data, selected }: AgentToolNodeProps) => {
     setLoading(true);
     try {
       // First, get the current project
-      const projectResponse = await fetch('https://api.cloud.llamaindex.ai/api/v1/projects/current', {
+      const projectResponse = await fetch('/api/llamacloud/api/v1/projects/current', {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -65,7 +65,7 @@ const AgentToolNode = memo(({ data, selected }: AgentToolNodeProps) => {
       const projectData: LlamaCloudProject = await projectResponse.json();
       
       // Then, get the pipelines for this project
-      const pipelinesResponse = await fetch(`https://api.cloud.llamaindex.ai/api/v1/pipelines?project_id=${projectData.id}`, {
+      const pipelinesResponse = await fetch(`/api/llamacloud/api/v1/pipelines?project_id=${projectData.id}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',

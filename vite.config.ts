@@ -8,6 +8,14 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    proxy: {
+      '/api/llamacloud': {
+        target: 'https://api.cloud.llamaindex.ai',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/llamacloud/, ''),
+        secure: true,
+      },
+    },
   },
   plugins: [
     react(),
