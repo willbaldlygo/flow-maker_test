@@ -28,8 +28,21 @@ const AgentToolNode = memo(({ data, selected }: AgentToolNodeProps) => {
   const [pipelines, setPipelines] = useState<LlamaCloudPipeline[]>([]);
   const [loading, setLoading] = useState(false);
   
-  // Mock API key - in a real app this would come from settings/env
-  const apiKey = localStorage.getItem('llamacloud_api_key');
+  // Get API key from settings
+  const getApiKey = () => {
+    try {
+      const savedSettings = localStorage.getItem('agent-builder-settings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        return settings.llamaCloudApiKey || '';
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    }
+    return '';
+  };
+  
+  const apiKey = getApiKey();
 
   const fetchLlamaCloudData = async () => {
     if (!apiKey || toolType !== 'llamacloud-index') return;
