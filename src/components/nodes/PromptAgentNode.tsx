@@ -1,7 +1,8 @@
-import { memo } from 'react';
+import { memo, useState, useEffect } from 'react';
 import { Handle, Position, useReactFlow } from '@xyflow/react';
 import { Bot } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 
 interface PromptAgentNodeProps {
   id: string;
@@ -15,6 +16,32 @@ interface PromptAgentNodeProps {
 
 const PromptAgentNode = memo(({ id, data, selected }: PromptAgentNodeProps) => {
   const { setNodes } = useReactFlow();
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempPrompt, setTempPrompt] = useState('');
+
+  const defaultPrompt = "You are a helpful agent who takes ${input} and does something with it";
+
+  useEffect(() => {
+    if (!data.systemPrompt) {
+      handleSystemPromptChange(defaultPrompt);
+    }
+  }, []);
+
+  const handleNodeClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEditing(true);
+    setTempPrompt(data.systemPrompt || defaultPrompt);
+  };
+
+  const handleSave = () => {
+    handleSystemPromptChange(tempPrompt);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setTempPrompt(data.systemPrompt || defaultPrompt);
+    setIsEditing(false);
+  };
 
   const handleLLMChange = (value: string) => {
     setNodes((nodes) =>
@@ -38,7 +65,10 @@ const PromptAgentNode = memo(({ id, data, selected }: PromptAgentNodeProps) => {
 
   return (
     <div className={`agent-node node-agent ${selected ? 'selected' : ''}`}>
-      <div className="node-content flex flex-col items-center justify-center text-foreground p-4 min-w-[180px]">
+      <div 
+        className={`node-content flex flex-col items-center justify-center text-foreground p-4 ${isEditing ? 'min-w-[400px] min-h-[300px]' : 'min-w-[180px]'}`}
+        onClick={!isEditing ? handleNodeClick : undefined}
+      >
         <Bot className="w-5 h-5 mb-2" />
         <span className="text-sm font-medium mb-2">{data.label || 'Prompt Agent'}</span>
         <div className="w-full space-y-1">
@@ -55,14 +85,44 @@ const PromptAgentNode = memo(({ id, data, selected }: PromptAgentNodeProps) => {
               <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
             </SelectContent>
           </Select>
-          <textarea 
-            value={data.systemPrompt || ''}
-            placeholder="System prompt..."
-            rows={2}
-            className="w-full px-2 py-1 text-xs bg-muted border border-border rounded text-foreground placeholder-muted-foreground resize-none"
-            onChange={(e) => handleSystemPromptChange(e.target.value)}
-            onClick={(e) => e.stopPropagation()}
-          />
+          {isEditing ? (
+            <div className="space-y-2">
+              <textarea 
+                value={tempPrompt}
+                placeholder="System prompt..."
+                rows={8}
+                className="w-full px-2 py-1 text-xs bg-muted border border-border rounded text-foreground placeholder-muted-foreground overflow-y-auto"
+                onChange={(e) => setTempPrompt(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+              />
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  onClick={handleSave}
+                  className="text-xs h-6"
+                >
+                  Save
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={handleCancel}
+                  className="text-xs h-6"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div 
+              className="w-full px-2 py-1 text-xs bg-muted border border-border rounded text-foreground min-h-[40px] cursor-pointer overflow-hidden"
+              onClick={handleNodeClick}
+            >
+              <div className="line-clamp-2">
+                {data.systemPrompt || defaultPrompt}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <Handle type="target" position={Position.Top} />
