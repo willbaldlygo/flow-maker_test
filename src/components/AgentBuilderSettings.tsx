@@ -134,6 +134,7 @@ const AgentBuilderSettings = memo(({ settings, onUpdateSettings }: AgentBuilderS
             onChange={(e) => updateSetting('llamaCloudApiKey', e.target.value)}
             placeholder="Enter LlamaCloud API key"
             className="text-xs pr-8"
+            data-1p-ignore
           />
           <button
             type="button"
@@ -177,6 +178,7 @@ const AgentBuilderSettings = memo(({ settings, onUpdateSettings }: AgentBuilderS
             onChange={(e) => updateCurrentApiKey(e.target.value)}
             placeholder={getApiKeyPlaceholder()}
             className="text-xs pr-8"
+            data-1p-ignore
           />
           <button
             type="button"

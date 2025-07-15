@@ -1,5 +1,5 @@
 import '@xyflow/react/dist/style.css';
-import { useCallback, useRef, useState, useEffect } from 'react';
+import { useCallback, useRef, useState, useEffect, Dispatch, SetStateAction } from 'react';
 import {
   ReactFlow,
   Background,
@@ -13,7 +13,9 @@ import {
   Node,
   MarkerType,
   useReactFlow,
-  ReactFlowProvider
+  ReactFlowProvider,
+  OnNodesChange,
+  OnEdgesChange,
 } from '@xyflow/react';
 
 // Import custom nodes
@@ -43,66 +45,26 @@ const nodeTypes = {
   decision: DecisionNode,
 };
 
-// Initial nodes and edges
-const initialNodes: Node[] = [
-  {
-    id: '1',
-    type: 'start',
-    position: { x: 100, y: 200 },
-    data: { label: 'Start' }
-  }
-];
+interface AgentFlowInnerProps {
+    nodes: Node[];
+    edges: Edge[];
+    onNodesChange: OnNodesChange;
+    onEdgesChange: OnEdgesChange;
+    setNodes: Dispatch<SetStateAction<Node[]>>;
+    setEdges: Dispatch<SetStateAction<Edge[]>>;
+    settings: SettingsData;
+    setSettings: Dispatch<SetStateAction<SettingsData>>;
+}
 
-const initialEdges: Edge[] = [];
-
-// Load saved graph from localStorage
-const loadSavedGraph = () => {
-  try {
-    const savedNodes = localStorage.getItem('agent-builder-nodes');
-    const savedEdges = localStorage.getItem('agent-builder-edges');
-    
-    if (savedNodes && savedEdges) {
-      return {
-        nodes: JSON.parse(savedNodes),
-        edges: JSON.parse(savedEdges)
-      };
-    }
-  } catch (error) {
-    console.error('Error loading saved graph:', error);
-  }
-  
-  return {
-    nodes: initialNodes,
-    edges: initialEdges
-  };
-};
-
-const savedGraph = loadSavedGraph();
-
-const AgentFlowInner = () => {
-  const [nodes, setNodes, onNodesChange] = useNodesState(savedGraph.nodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(savedGraph.edges);
-  const [isSaving, setIsSaving] = useState(false);
-  const [settings, setSettings] = useState<SettingsData>(defaultSettings);
-  const { screenToFlowPosition } = useReactFlow();
-  const reactFlowWrapper = useRef<HTMLDivElement>(null);
+const AgentFlowInner = ({ nodes, edges, onNodesChange, onEdgesChange, setNodes, setEdges, settings, setSettings }: AgentFlowInnerProps) => {
+    const [isSaving, setIsSaving] = useState(false);
+    const { screenToFlowPosition } = useReactFlow();
+    const reactFlowWrapper = useRef<HTMLDivElement>(null);
 
   // onUpdateSettings sets the settings
   const onUpdateSettings = (newSettings: SettingsData) => {
     setSettings(newSettings);
   };
-
-  // Load settings from localStorage on mount
-  useEffect(() => {
-    try {
-      const savedSettings = localStorage.getItem('agent-builder-settings');
-      if (savedSettings) {
-        setSettings(JSON.parse(savedSettings));
-      }
-    } catch (error) {
-      console.error('Error loading settings:', error);
-    }
-  }, []);
 
   // Save settings to localStorage whenever they change
   useEffect(() => {
@@ -119,31 +81,6 @@ const AgentFlowInner = () => {
     const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
     return (maxId + 1).toString();
   }, [nodes]);
-
-  // Handle delete key presses
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Delete' || event.key === 'Backspace') {
-        // Don't delete nodes if user is editing text in an input or textarea
-        const activeElement = document.activeElement as HTMLElement;
-        if (activeElement && (
-          activeElement.tagName === 'INPUT' || 
-          activeElement.tagName === 'TEXTAREA' ||
-          activeElement.isContentEditable
-        )) {
-          return;
-        }
-        
-        // Delete selected nodes
-        setNodes((nds) => nds.filter((node) => !node.selected));
-        // Delete selected edges
-        setEdges((eds) => eds.filter((edge) => !edge.selected));
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [setNodes, setEdges]);
 
   // Auto-save to localStorage whenever nodes or edges change
   useEffect(() => {
@@ -177,7 +114,10 @@ const AgentFlowInner = () => {
         style: {
           strokeWidth: 2,
           stroke: 'hsl(var(--muted-foreground))'
-        }
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+        },
       };
       setEdges((eds) => addEdge(newEdge, eds));
     },
@@ -280,6 +220,7 @@ const AgentFlowInner = () => {
           onDrop={onDrop}
           onDragOver={onDragOver}
           nodeTypes={nodeTypes}
+          deleteKeyCode={['Backspace', 'Delete']}
           fitView
           className="bg-flow-bg"
           defaultEdgeOptions={{
@@ -304,12 +245,24 @@ const AgentFlowInner = () => {
   );
 };
 
-const AgentFlow = () => {
-  return (
-    <ReactFlowProvider>
-      <AgentFlowInner />
-    </ReactFlowProvider>
-  );
-};
+interface AgentFlowProps {
+    nodes: Node[];
+    edges: Edge[];
+    onNodesChange: OnNodesChange;
+    onEdgesChange: OnEdgesChange;
+    setNodes: Dispatch<SetStateAction<Node[]>>;
+    setEdges: Dispatch<SetStateAction<Edge[]>>;
+    settings: SettingsData;
+    setSettings: Dispatch<SetStateAction<SettingsData>>;
+}
 
-export default AgentFlow;
+const AgentFlow = ({ nodes, edges, onNodesChange, onEdgesChange, setNodes, setEdges, settings, setSettings }: AgentFlowProps) => {
+    return (
+      <ReactFlowProvider>
+        <AgentFlowInner nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} setNodes={setNodes} setEdges={setEdges} settings={settings} setSettings={setSettings} />
+      </ReactFlowProvider>
+    );
+  };
+  
+  export default AgentFlow;
+  

@@ -9,7 +9,8 @@ import {
   useEdgesState,
   Node,
   Edge,
-  ReactFlowProvider
+  ReactFlowProvider,
+  MarkerType
 } from '@xyflow/react';
 
 // Import custom nodes (read-only versions)
@@ -92,7 +93,10 @@ const RunViewInner = () => {
             style: {
               strokeWidth: 2,
               stroke: 'hsl(var(--muted-foreground))'
-            }
+            },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+            },
           }}
         >
           <Background color="hsl(var(--border))" gap={20} />
