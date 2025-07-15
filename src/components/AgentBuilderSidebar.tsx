@@ -10,7 +10,9 @@ import {
   Wrench, 
   Split, 
   Merge, 
-  GitBranch 
+  GitBranch,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import AgentBuilderSettings from './AgentBuilderSettings';
 
@@ -80,9 +82,10 @@ const nodeTemplates: NodeTemplate[] = [
 
 interface AgentBuilderSidebarProps {
   onAddNode: (type: string) => void;
+  onReset: () => void;
 }
 
-const AgentBuilderSidebar = memo(({ onAddNode }: AgentBuilderSidebarProps) => {
+const AgentBuilderSidebar = memo(({ onAddNode, onReset }: AgentBuilderSidebarProps) => {
   const onDragStart = (event: React.DragEvent, nodeType: string) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
     event.dataTransfer.effectAllowed = 'move';
@@ -128,6 +131,31 @@ const AgentBuilderSidebar = memo(({ onAddNode }: AgentBuilderSidebarProps) => {
       </div>
 
       <AgentBuilderSettings />
+
+      {/* Danger Zone */}
+      <div className="mt-6">
+        <div className="flex items-center space-x-2 mb-3">
+          <AlertTriangle className="w-4 h-4 text-destructive" />
+          <h3 className="text-sm font-semibold text-foreground">Danger Zone</h3>
+        </div>
+
+        <Card className="p-3 border-destructive/20 bg-destructive/5">
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              This will permanently delete all nodes, connections, and settings.
+            </p>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={onReset}
+              className="w-full"
+            >
+              <Trash2 className="w-3 h-3 mr-2" />
+              Reset Everything
+            </Button>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 });

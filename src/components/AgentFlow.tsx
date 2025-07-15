@@ -187,6 +187,17 @@ const AgentFlowInner = () => {
     setNodes((nds) => nds.concat(newNode));
   }, [setNodes]);
 
+  const onReset = useCallback(() => {
+    // Clear the graph
+    setNodes([]);
+    setEdges([]);
+    
+    // Clear localStorage
+    localStorage.removeItem('agent-builder-nodes');
+    localStorage.removeItem('agent-builder-edges');
+    localStorage.removeItem('agent-builder-settings');
+  }, [setNodes, setEdges]);
+
   return (
     <div className="h-screen flex relative">
       {/* Save Indicator */}
@@ -204,7 +215,7 @@ const AgentFlowInner = () => {
         )}
       </div>
 
-      <AgentBuilderSidebar onAddNode={onAddNode} />
+      <AgentBuilderSidebar onAddNode={onAddNode} onReset={onReset} />
       
       <div className="flex-1" ref={reactFlowWrapper}>
         <ReactFlow
