@@ -29,6 +29,7 @@ const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
   const [selectedIndex, setSelectedIndex] = useState<string>(data.config || '');
   const [pipelines, setPipelines] = useState<LlamaCloudPipeline[]>([]);
   const [loading, setLoading] = useState(false);
+  const [configLoaded, setConfigLoaded] = useState(false);
   
   // Load configuration from localStorage on mount
   useEffect(() => {
@@ -38,9 +39,12 @@ const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
         const config = JSON.parse(savedConfig);
         setToolType(config.toolType || '');
         setSelectedIndex(config.selectedIndex || '');
+        console.log('Loaded config from localStorage:', config);
       }
+      setConfigLoaded(true);
     } catch (error) {
       console.error('Error loading agent tool config:', error);
+      setConfigLoaded(true);
     }
   }, [id]);
   
@@ -51,6 +55,8 @@ const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
         toolType: newToolType,
         selectedIndex: newSelectedIndex
       };
+      
+      console.log('Saving config to localStorage:', config);
       
       // Save to localStorage
       localStorage.setItem(`agent-tool-config-${id}`, JSON.stringify(config));
@@ -137,6 +143,15 @@ const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
   useEffect(() => {
     fetchLlamaCloudData();
   }, [toolType, apiKey]);
+
+  // Ensure selectedIndex is preserved after pipelines are loaded
+  useEffect(() => {
+    console.log('Pipelines loaded:', pipelines.length, 'Current selectedIndex:', selectedIndex);
+    if (pipelines.length > 0 && selectedIndex) {
+      const foundPipeline = pipelines.find(p => p.id === selectedIndex);
+      console.log('Found pipeline for selectedIndex:', foundPipeline);
+    }
+  }, [pipelines, selectedIndex]);
 
   // Handle tool type change
   const handleToolTypeChange = (newToolType: string) => {
