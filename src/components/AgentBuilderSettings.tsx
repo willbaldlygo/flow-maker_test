@@ -5,7 +5,7 @@ import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Eye, EyeOff, Settings } from 'lucide-react';
 
-interface SettingsData {
+export interface SettingsData {
   llamaCloudApiKey: string;
   defaultLLM: string;
   apiKeys: {
@@ -15,7 +15,7 @@ interface SettingsData {
   };
 }
 
-const defaultSettings: SettingsData = {
+export const defaultSettings: SettingsData = {
   llamaCloudApiKey: '',
   defaultLLM: 'gpt-4o',
   apiKeys: {
@@ -25,8 +25,12 @@ const defaultSettings: SettingsData = {
   }
 };
 
-const AgentBuilderSettings = memo(() => {
-  const [settings, setSettings] = useState<SettingsData>(defaultSettings);
+interface AgentBuilderSettingsProps {
+  settings: SettingsData;
+  onUpdateSettings: (settings: SettingsData) => void;
+}
+
+const AgentBuilderSettings = memo(({ settings, onUpdateSettings }: AgentBuilderSettingsProps) => {
   const [showApiKeys, setShowApiKeys] = useState({
     llamaCloud: false,
     openai: false,
@@ -34,42 +38,21 @@ const AgentBuilderSettings = memo(() => {
     google: false
   });
 
-  // Load settings from localStorage on mount
-  useEffect(() => {
-    try {
-      const savedSettings = localStorage.getItem('agent-builder-settings');
-      if (savedSettings) {
-        setSettings(JSON.parse(savedSettings));
-      }
-    } catch (error) {
-      console.error('Error loading settings:', error);
-    }
-  }, []);
-
-  // Save settings to localStorage whenever they change
-  useEffect(() => {
-    try {
-      localStorage.setItem('agent-builder-settings', JSON.stringify(settings));
-    } catch (error) {
-      console.error('Error saving settings:', error);
-    }
-  }, [settings]);
-
   const updateSetting = (key: keyof SettingsData, value: any) => {
-    setSettings(prev => ({
-      ...prev,
+    onUpdateSettings({
+      ...settings,
       [key]: value
-    }));
+    });
   };
 
   const updateApiKey = (provider: keyof SettingsData['apiKeys'], value: string) => {
-    setSettings(prev => ({
-      ...prev,
+    onUpdateSettings({
+      ...settings,
       apiKeys: {
-        ...prev.apiKeys,
+        ...settings.apiKeys,
         [provider]: value
       }
-    }));
+    });
   };
 
   const toggleApiKeyVisibility = (key: keyof typeof showApiKeys) => {

@@ -28,6 +28,7 @@ import CollectorNode from './nodes/CollectorNode';
 import DecisionNode from './nodes/DecisionNode';
 import { Save, Check } from 'lucide-react';
 import AgentBuilderSidebar from './AgentBuilderSidebar';
+import { SettingsData, defaultSettings } from './AgentBuilderSettings';
 
 // Node types mapping
 const nodeTypes = {
@@ -82,8 +83,30 @@ const AgentFlowInner = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState(savedGraph.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(savedGraph.edges);
   const [isSaving, setIsSaving] = useState(false);
+  const [settings, setSettings] = useState<SettingsData>(defaultSettings);
   const { screenToFlowPosition } = useReactFlow();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
+
+  // Load settings from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedSettings = localStorage.getItem('agent-builder-settings');
+      if (savedSettings) {
+        setSettings(JSON.parse(savedSettings));
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    }
+  }, []);
+
+  // Save settings to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem('agent-builder-settings', JSON.stringify(settings));
+    } catch (error) {
+      console.error('Error saving settings:', error);
+    }
+  }, [settings]);
 
   // Generate unique node ID based on existing nodes
   const generateNodeId = useCallback(() => {
@@ -197,6 +220,9 @@ const AgentFlowInner = () => {
     setNodes([]);
     setEdges([]);
     
+    // Reset settings to default
+    setSettings(defaultSettings);
+    
     // Clear localStorage
     localStorage.removeItem('agent-builder-nodes');
     localStorage.removeItem('agent-builder-edges');
@@ -220,7 +246,7 @@ const AgentFlowInner = () => {
         )}
       </div>
 
-      <AgentBuilderSidebar onAddNode={onAddNode} onReset={onReset} />
+      <AgentBuilderSidebar onAddNode={onAddNode} onReset={onReset} settings={settings} onUpdateSettings={setSettings} />
       
       <div className="flex-1" ref={reactFlowWrapper}>
         <ReactFlow

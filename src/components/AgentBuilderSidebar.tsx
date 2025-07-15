@@ -80,12 +80,16 @@ const nodeTemplates: NodeTemplate[] = [
   }
 ];
 
+import { SettingsData } from './AgentBuilderSettings';
+
 interface AgentBuilderSidebarProps {
   onAddNode: (type: string) => void;
   onReset: () => void;
+  settings: SettingsData;
+  onUpdateSettings: (settings: SettingsData) => void;
 }
 
-const AgentBuilderSidebar = memo(({ onAddNode, onReset }: AgentBuilderSidebarProps) => {
+const AgentBuilderSidebar = memo(({ onAddNode, onReset, settings, onUpdateSettings }: AgentBuilderSidebarProps) => {
   const onDragStart = (event: React.DragEvent, nodeType: string) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
     event.dataTransfer.effectAllowed = 'move';
@@ -130,7 +134,7 @@ const AgentBuilderSidebar = memo(({ onAddNode, onReset }: AgentBuilderSidebarPro
         })}
       </div>
 
-      <AgentBuilderSettings />
+      <AgentBuilderSettings settings={settings} onUpdateSettings={onUpdateSettings} />
 
       {/* Danger Zone */}
       <div className="mt-6">
