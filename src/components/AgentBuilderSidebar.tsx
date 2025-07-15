@@ -98,7 +98,7 @@ const AgentBuilderSidebar = memo(({ onAddNode, onReset, settings, onUpdateSettin
   };
 
   return (
-    <div className="w-80 bg-card border-r border-border p-4 overflow-y-auto">
+    <div className="w-80 h-full bg-card border-r border-border p-4 overflow-y-auto">
       <div className="mb-6">
         <h2 className="text-xl font-bold text-foreground mb-2">Agent Builder</h2>
         <p className="text-sm text-muted-foreground">

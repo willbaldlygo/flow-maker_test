@@ -8,7 +8,7 @@ const RunSidebar = () => {
   };
 
   return (
-    <div className="w-80 bg-card border-r border-border p-4">
+    <div className="w-80 h-full bg-card border-r border-border p-4">
       <div className="space-y-4">
         <div className="flex items-center space-x-2">
           <h2 className="text-lg font-semibold">Run Mode</h2>
