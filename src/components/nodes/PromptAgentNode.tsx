@@ -126,10 +126,11 @@ const PromptAgentNode = memo(({ id, data, selected }: PromptAgentNodeProps) => {
         </div>
       </div>
       <Handle type="target" position={Position.Top} />
-      <Handle type="source" position={Position.Bottom} />
+      <Handle type="source" position={Position.Bottom} id="output" />
       <Handle 
         type="source" 
         position={Position.Right} 
+        id="agent"
         style={{ 
           width: '12px', 
           height: '12px', 
