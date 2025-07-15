@@ -30,6 +30,51 @@ const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
   const [pipelines, setPipelines] = useState<LlamaCloudPipeline[]>([]);
   const [loading, setLoading] = useState(false);
   const [configLoaded, setConfigLoaded] = useState(false);
+  const [apiKey, setApiKey] = useState<string>('');
+  
+  // Load API key from settings
+  const loadApiKey = () => {
+    try {
+      const savedSettings = localStorage.getItem('agent-builder-settings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        return settings.llamaCloudApiKey || '';
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    }
+    return '';
+  };
+  
+  // Load API key on mount and when settings change
+  useEffect(() => {
+    const key = loadApiKey();
+    setApiKey(key);
+    
+    // Listen for settings changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'agent-builder-settings') {
+        const key = loadApiKey();
+        setApiKey(key);
+      }
+    };
+    
+    // Check for API key changes periodically (for same-tab changes)
+    const checkApiKey = () => {
+      const currentKey = loadApiKey();
+      if (currentKey !== apiKey) {
+        setApiKey(currentKey);
+      }
+    };
+    
+    const interval = setInterval(checkApiKey, 1000); // Check every second
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [apiKey]);
   
   // Load configuration from localStorage on mount
   useEffect(() => {
@@ -81,21 +126,6 @@ const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
     }
   };
   
-  // Get API key from settings
-  const getApiKey = () => {
-    try {
-      const savedSettings = localStorage.getItem('agent-builder-settings');
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        return settings.llamaCloudApiKey || '';
-      }
-    } catch (error) {
-      console.error('Error loading settings:', error);
-    }
-    return '';
-  };
-  
-  const apiKey = getApiKey();
 
   const fetchLlamaCloudData = async () => {
     if (!apiKey || toolType !== 'llamacloud-index') return;
