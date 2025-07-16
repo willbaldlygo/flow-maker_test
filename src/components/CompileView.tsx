@@ -7,6 +7,7 @@ import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { compileWorkflow } from '@/lib/workflow-compiler';
 import { generateTypescript } from '@/lib/typescript-compiler';
 import { Node, Edge } from '@xyflow/react';
+import { useToast } from './ui/use-toast';
 
 interface CompileViewProps {
     nodes: Node[];
@@ -17,12 +18,15 @@ const CompileView = ({ nodes, edges }: CompileViewProps) => {
   const [generatedCode, setGeneratedCode] = useState<string | null>("// Click 'Compile' to generate the workflow code");
   const [isDebug, setIsDebug] = useState(false);
   const searchParams = useSearchParams();
+  const [intermediateJson, setIntermediateJson] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     setIsDebug(searchParams.get('debug') === '1');
   }, [searchParams]);
 
   const onCompile = () => {
+    setIntermediateJson(null);
     const json = compileWorkflow(nodes, edges);
     if (json) {
       const code = generateTypescript(json);
@@ -33,11 +37,14 @@ const CompileView = ({ nodes, edges }: CompileViewProps) => {
   };
 
   const onShowIntermediate = () => {
+    setIntermediateJson(null);
+    setGeneratedCode(null);
     const json = compileWorkflow(nodes, edges);
     if (json) {
-        setGeneratedCode(JSON.stringify(json, null, 2));
+      const jsonString = JSON.stringify(json, null, 2);
+      setIntermediateJson(jsonString);
     } else {
-        setGeneratedCode("// Could not generate workflow. Make sure you have a Start node.");
+      setGeneratedCode("// Could not generate workflow. Make sure you have a Start node.");
     }
   }
 
@@ -70,7 +77,7 @@ const CompileView = ({ nodes, edges }: CompileViewProps) => {
       <div className="flex-1 p-4 overflow-hidden">
         <div className="h-full bg-card border rounded-md overflow-auto">
             <SyntaxHighlighter 
-                language="typescript" 
+                language={intermediateJson ? "json" : "typescript"} 
                 style={vs} 
                 showLineNumbers 
                 className="h-full"
@@ -80,7 +87,7 @@ const CompileView = ({ nodes, edges }: CompileViewProps) => {
                     wordBreak: 'break-word',
                 }}
             >
-                {generatedCode || ''}
+                {intermediateJson || generatedCode || ''}
             </SyntaxHighlighter>
         </div>
       </div>

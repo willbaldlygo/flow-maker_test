@@ -79,6 +79,18 @@ function buildNodeJson(node: Node, allNodes: Node[], allEdges: Edge[], processed
 }
 
 export function compileWorkflow(nodes: Node[], edges: Edge[]): any {
+  let settings = {};
+  if (typeof window !== "undefined") {
+    try {
+      const savedSettings = localStorage.getItem('agent-builder-settings');
+      if (savedSettings) {
+        settings = JSON.parse(savedSettings);
+      }
+    } catch (e) {
+      console.error("Failed to parse settings from localStorage", e);
+    }
+  }
+
   const startNode = nodes.find(node => node.type === 'start');
   if (!startNode) {
     return { error: "No start node found" };
