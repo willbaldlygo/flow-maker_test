@@ -8,6 +8,7 @@ import { compileWorkflow } from '@/lib/workflow-compiler';
 import { generateTypescript } from '@/lib/typescript-compiler';
 import { Node, Edge } from '@xyflow/react';
 import { useToast } from './ui/use-toast';
+import { Copy } from 'lucide-react';
 
 interface CompileViewProps {
     nodes: Node[];
@@ -48,6 +49,22 @@ const CompileView = ({ nodes, edges }: CompileViewProps) => {
     }
   }
 
+  const handleCopy = () => {
+    const textToCopy = intermediateJson || generatedCode;
+    if (textToCopy && !textToCopy.startsWith("//")) {
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        toast({
+          title: "Copied to clipboard!",
+        });
+      }, () => {
+        toast({
+          title: "Failed to copy to clipboard",
+          variant: "destructive",
+        });
+      });
+    }
+  }
+
   const handleDownload = () => {
     if (generatedCode) {
       const blob = new Blob([generatedCode], { type: 'text/typescript' });
@@ -75,7 +92,16 @@ const CompileView = ({ nodes, edges }: CompileViewProps) => {
         <Button onClick={handleDownload} disabled={!generatedCode || generatedCode.startsWith("//")}>Download</Button>
       </div>
       <div className="flex-1 p-4 overflow-hidden">
-        <div className="h-full bg-card border rounded-md overflow-auto">
+        <div className="relative h-full bg-card border rounded-md overflow-auto">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 z-10 h-8 w-8"
+              onClick={handleCopy}
+              disabled={!(intermediateJson || generatedCode) || (generatedCode !== null && generatedCode.startsWith("//"))}
+            >
+                <Copy className="h-4 w-4" />
+            </Button>
             <SyntaxHighlighter 
                 language={intermediateJson ? "json" : "typescript"} 
                 style={vs} 
