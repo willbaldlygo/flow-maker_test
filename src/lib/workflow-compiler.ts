@@ -247,5 +247,5 @@ export function compileWorkflow(nodes: Node[], edges: Edge[]): any {
   });
 
 
-  return { nodes: finalNodes };
+  return { settings, nodes: finalNodes };
 } 
