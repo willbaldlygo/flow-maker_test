@@ -6,10 +6,12 @@ export interface WorkflowNodeJson {
   data: any;
   accepts?: string | string[];
   emits?: string | string[] | { [key:string]: string };
+  prompt?: string;
 }
 
 export interface WorkflowJson {
     nodes: WorkflowNodeJson[];
+    settings: any;
 }
 
 function buildNodeJson(node: Node, allNodes: Node[], allEdges: Edge[], processedNodeIds: Set<string>): any {
@@ -247,5 +249,5 @@ export function compileWorkflow(nodes: Node[], edges: Edge[]): any {
   });
 
 
-  return { settings, nodes: finalNodes };
+  return { nodes: finalNodes, settings };
 } 
