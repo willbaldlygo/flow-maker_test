@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { generateWorkflowJson } from '@/lib/workflow-compiler';
+import { compileWorkflow } from '@/lib/workflow-compiler';
 import { generateTypescript } from '@/lib/typescript-compiler';
 import { Node, Edge } from '@xyflow/react';
 
@@ -23,19 +23,19 @@ const CompileView = ({ nodes, edges }: CompileViewProps) => {
   }, [searchParams]);
 
   const onCompile = () => {
-    const workflowJson = generateWorkflowJson(nodes, edges);
-    if (workflowJson) {
-      const tsCode = generateTypescript(workflowJson);
-      setGeneratedCode(tsCode);
+    const json = compileWorkflow(nodes, edges);
+    if (json) {
+      const code = generateTypescript(json);
+      setGeneratedCode(code);
     } else {
         setGeneratedCode("// Could not generate workflow. Make sure you have a Start node.");
     }
   };
 
   const onShowIntermediate = () => {
-    const workflowJson = generateWorkflowJson(nodes, edges);
-    if (workflowJson) {
-        setGeneratedCode(JSON.stringify(workflowJson, null, 2));
+    const json = compileWorkflow(nodes, edges);
+    if (json) {
+        setGeneratedCode(JSON.stringify(json, null, 2));
     } else {
         setGeneratedCode("// Could not generate workflow. Make sure you have a Start node.");
     }
