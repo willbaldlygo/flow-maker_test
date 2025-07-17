@@ -268,17 +268,14 @@ const RunViewInner = () => {
       
       <div className="flex-1 flex flex-col h-full">
         <ResizablePanelGroup direction="vertical" className="h-full">
-          <ResizablePanel defaultSize={60}>
+          <ResizablePanel defaultSize={40}>
             <ReactFlow
               nodes={nodes.map((node) => ({
                 ...node,
-                style:
+                className:
                   node.id === currentNodeId
-                    ? {
-                        boxShadow: '0 0 20px 5px hsl(var(--primary))',
-                        border: '2px solid hsl(var(--primary))',
-                      }
-                    : undefined,
+                    ? `${node.className || ''} glowing`
+                    : node.className,
               }))}
               edges={edges}
               onNodesChange={onNodesChange}
@@ -307,7 +304,7 @@ const RunViewInner = () => {
             </ReactFlow>
           </ResizablePanel>
           <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={40}>
+          <ResizablePanel defaultSize={60}>
             <div className="h-full p-4 bg-card border-t border-border">
               <ChatSection handler={chatHandler}>
                 <ChatMessages />

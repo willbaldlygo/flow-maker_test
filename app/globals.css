@@ -161,6 +161,10 @@ All colors MUST be HSL.
   z-index: 1000;
 }
 
+.react-flow__node.glowing .agent-node {
+  filter: url(#glow);
+}
+
 /* Node Type Specific Styles */
 .node-start, .node-stop {
   border-radius: 50% !important;
