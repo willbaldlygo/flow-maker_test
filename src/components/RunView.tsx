@@ -144,6 +144,17 @@ const RunViewInner = () => {
           break;
         case 'userInput':
           setExecutionStatus('pausedForInput');
+          // Add a system message to the chat with the prompt from the node
+          if (node.data.prompt) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: Math.random().toString(),
+                role: 'assistant',
+                content: String(node.data.prompt),
+              },
+            ]);
+          }
           // The workflow will now wait for user input.
           // The onUserInput function will be called when the user submits a message.
           return; // Don't proceed further until user input
@@ -242,6 +253,14 @@ const RunViewInner = () => {
     }
   };
 
+  const handleRestart = () => {
+    setExecutionStatus('idle');
+    setError(null);
+    setWorkflowState({});
+    setMessages([]);
+    setCurrentNodeId(null);
+  };
+
   const handleUserInput = async (message: Message) => {
     if (executionStatus === 'pausedForInput' && currentNodeId) {
       setWorkflowState((prevState) => ({
@@ -262,6 +281,7 @@ const RunViewInner = () => {
     <div className="h-full flex relative">
       <RunSidebar
         onRun={handleRun}
+        onRestart={handleRestart}
         status={executionStatus}
         error={error}
       />
