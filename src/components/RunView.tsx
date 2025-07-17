@@ -12,6 +12,9 @@ import {
   ReactFlowProvider,
   MarkerType
 } from '@xyflow/react';
+import { type Message } from 'ai/react';
+import { compileWorkflow } from '@/lib/workflow-compiler';
+import { useRef } from 'react';
 
 // Import custom nodes (read-only versions)
 import StartNode from './nodes/StartNode';
@@ -61,8 +64,24 @@ const loadSavedGraph = () => {
 };
 
 const RunViewInner = () => {
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const [currentNodeId, setCurrentNodeId] = useState<string | null>(null);
+  const [workflowState, _setWorkflowState] = useState<Record<string, any>>({});
+  const workflowStateRef = useRef(workflowState);
+
+  const setWorkflowState = (data: React.SetStateAction<Record<string, any>>) => {
+    const value =
+      typeof data === 'function' ? data(workflowStateRef.current) : data;
+    workflowStateRef.current = value;
+    _setWorkflowState(value);
+  };
+
+  const [executionStatus, setExecutionStatus] = useState<
+    'idle' | 'running' | 'pausedForInput' | 'finished' | 'error'
+  >('idle');
+  const [error, setError] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
 
   // Load the saved graph on mount
   useEffect(() => {
@@ -71,13 +90,166 @@ const RunViewInner = () => {
     setEdges(savedGraph.edges);
   }, [setNodes, setEdges]);
 
+  const executeNode = async (nodeId: string) => {
+    setCurrentNodeId(nodeId);
+    const node = nodes.find((n) => n.id === nodeId);
+
+    if (!node) {
+      setError(`Node with ID ${nodeId} not found.`);
+      setExecutionStatus('error');
+      return;
+    }
+
+    try {
+      let nextNodeId: string | null = null;
+      switch (node.type) {
+        case 'start':
+          const connectedEdge = edges.find((e) => e.source === nodeId);
+          if (connectedEdge) {
+            nextNodeId = connectedEdge.target;
+          } else {
+            setExecutionStatus('finished');
+          }
+          break;
+        case 'userInput':
+          setExecutionStatus('pausedForInput');
+          // The workflow will now wait for user input.
+          // The onUserInput function will be called when the user submits a message.
+          return; // Don't proceed further until user input
+        case 'promptLLM':
+          // This will be handled similarly to promptAgent
+          const llmOutput = `Mock output from ${node.data.label}`;
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Math.random().toString(),
+              role: 'assistant',
+              content: `Executing ${node.data.label}...`,
+            },
+          ]);
+          setWorkflowState((prevState) => ({
+            ...prevState,
+            [nodeId]: llmOutput,
+          }));
+          const llmEdge = edges.find((e) => e.source === nodeId);
+          if (llmEdge) {
+            nextNodeId = llmEdge.target;
+          } else {
+            setExecutionStatus('finished');
+          }
+          break;
+        case 'promptAgent':
+          const compiledWorkflow = compileWorkflow(nodes, edges);
+          const response = await fetch('/api/agent/run', {
+            method: 'POST',
+            body: JSON.stringify({
+              workflow: compiledWorkflow.nodes,
+              settings: compiledWorkflow.settings,
+              workflowState: workflowStateRef.current,
+            }),
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error(
+              `Agent execution failed: ${await response.text()}`,
+            );
+          }
+
+          const { output } = await response.json();
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Math.random().toString(),
+              role: 'assistant',
+              content: output,
+            },
+          ]);
+
+          setWorkflowState((prevState) => ({
+            ...prevState,
+            [nodeId]: output,
+          }));
+
+          const agentEdge = edges.find((e) => e.source === nodeId);
+          if (agentEdge) {
+            nextNodeId = agentEdge.target;
+          } else {
+            setExecutionStatus('finished');
+          }
+          break;
+        case 'stop':
+          setExecutionStatus('finished');
+          break;
+        default:
+          setExecutionStatus('finished');
+          break;
+      }
+
+      if (nextNodeId) {
+        await executeNode(nextNodeId);
+      }
+    } catch (e: any) {
+      setError(e.message);
+      setExecutionStatus('error');
+    }
+  };
+
+  const handleRun = async () => {
+    setExecutionStatus('running');
+    setError(null);
+    setWorkflowState({});
+    const startNode = nodes.find((n) => n.type === 'start');
+    if (startNode) {
+      await executeNode(startNode.id);
+    } else {
+      setError('No StartNode found in the graph.');
+      setExecutionStatus('error');
+    }
+  };
+
+  const handleUserInput = async (message: Message) => {
+    if (executionStatus === 'pausedForInput' && currentNodeId) {
+      setWorkflowState((prevState) => ({
+        ...prevState,
+        [currentNodeId]: message.content,
+      }));
+      setExecutionStatus('running');
+      const connectedEdge = edges.find((e) => e.source === currentNodeId);
+      if (connectedEdge) {
+        await executeNode(connectedEdge.target);
+      } else {
+        setExecutionStatus('finished');
+      }
+    }
+  };
+
   return (
     <div className="h-full flex relative">
-      <RunSidebar />
+      <RunSidebar
+        onRun={handleRun}
+        status={executionStatus}
+        onUserInput={handleUserInput}
+        error={error}
+        messages={messages}
+        setMessages={setMessages}
+      />
       
       <div className="flex-1">
         <ReactFlow
-          nodes={nodes}
+          nodes={nodes.map((node) => ({
+            ...node,
+            style:
+              node.id === currentNodeId
+                ? {
+                    boxShadow: '0 0 20px 5px hsl(var(--primary))',
+                    border: '2px solid hsl(var(--primary))',
+                  }
+                : undefined,
+          }))}
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}

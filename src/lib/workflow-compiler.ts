@@ -165,6 +165,7 @@ export function compileWorkflow(nodes: Node[], edges: Edge[]): any {
           nodeJson.tools.push({
             id: `node-${toolNode.id}`,
             type: toolNode.type,
+            name: toolNode.data.label,
             ...toolConfig
           });
         }
