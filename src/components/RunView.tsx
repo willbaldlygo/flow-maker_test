@@ -1,5 +1,4 @@
 import '@xyflow/react/dist/style.css';
-import { useEffect, useState } from 'react';
 import {
   ReactFlow,
   Background,
@@ -14,7 +13,19 @@ import {
 } from '@xyflow/react';
 import { type Message } from 'ai/react';
 import { compileWorkflow } from '@/lib/workflow-compiler';
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@/components/ui/resizable';
+import {
+  ChatInput,
+  ChatMessages,
+  ChatSection,
+  ChatHandler,
+  Message as ChatUIMessage,
+} from '@llamaindex/chat-ui';
 
 // Import custom nodes (read-only versions)
 import StartNode from './nodes/StartNode';
@@ -82,6 +93,26 @@ const RunViewInner = () => {
   >('idle');
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+
+  const chatHandler: ChatHandler = {
+    messages: messages as ChatUIMessage[],
+    input,
+    setInput,
+    isLoading:
+      executionStatus === 'running' || executionStatus === 'finished',
+    append: async (message) => {
+      const newMessage = {
+        ...message,
+        id: Math.random().toString(),
+      };
+      setMessages((prev) => [...prev, newMessage]);
+      await handleUserInput(newMessage);
+      return '';
+    },
+    reload: () => {},
+    stop: () => {},
+  };
 
   // Load the saved graph on mount
   useEffect(() => {
@@ -232,53 +263,70 @@ const RunViewInner = () => {
       <RunSidebar
         onRun={handleRun}
         status={executionStatus}
-        onUserInput={handleUserInput}
         error={error}
-        messages={messages}
-        setMessages={setMessages}
       />
       
-      <div className="flex-1">
-        <ReactFlow
-          nodes={nodes.map((node) => ({
-            ...node,
-            style:
-              node.id === currentNodeId
-                ? {
-                    boxShadow: '0 0 20px 5px hsl(var(--primary))',
-                    border: '2px solid hsl(var(--primary))',
-                  }
-                : undefined,
-          }))}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          nodeTypes={nodeTypes}
-          fitView
-          nodesDraggable={false}
-          nodesConnectable={false}
-          elementsSelectable={false}
-          className="bg-flow-bg"
-          defaultEdgeOptions={{
-            type: 'default',
-            animated: false,
-            style: {
-              strokeWidth: 2,
-              stroke: 'hsl(var(--muted-foreground))'
-            },
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-            },
-          }}
-        >
-          <Background color="hsl(var(--border))" gap={20} />
-          <Controls />
-          <MiniMap 
-            zoomable 
-            pannable 
-            className="bg-card border border-border"
-          />
-        </ReactFlow>
+      <div className="flex-1 flex flex-col h-full">
+        <ResizablePanelGroup direction="vertical" className="h-full">
+          <ResizablePanel defaultSize={60}>
+            <ReactFlow
+              nodes={nodes.map((node) => ({
+                ...node,
+                style:
+                  node.id === currentNodeId
+                    ? {
+                        boxShadow: '0 0 20px 5px hsl(var(--primary))',
+                        border: '2px solid hsl(var(--primary))',
+                      }
+                    : undefined,
+              }))}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              nodeTypes={nodeTypes}
+              fitView
+              nodesDraggable={false}
+              nodesConnectable={false}
+              elementsSelectable={false}
+              className="bg-flow-bg"
+              defaultEdgeOptions={{
+                type: 'default',
+                animated: false,
+                style: {
+                  strokeWidth: 2,
+                  stroke: 'hsl(var(--muted-foreground))',
+                },
+                markerEnd: {
+                  type: MarkerType.ArrowClosed,
+                },
+              }}
+            >
+              <Background color="hsl(var(--border))" gap={20} />
+              <Controls />
+              <MiniMap zoomable pannable className="bg-card border border-border" />
+            </ReactFlow>
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize={40}>
+            <div className="h-full p-4 bg-card border-t border-border">
+              <ChatSection handler={chatHandler}>
+                <ChatMessages />
+                <ChatInput>
+                  <ChatInput.Form>
+                    <ChatInput.Field
+                      placeholder={
+                        executionStatus === 'pausedForInput'
+                          ? 'Please provide your input'
+                          : 'Waiting for agent...'
+                      }
+                    />
+                    <ChatInput.Submit />
+                  </ChatInput.Form>
+                </ChatInput>
+              </ChatSection>
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
     </div>
   );
