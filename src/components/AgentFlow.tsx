@@ -210,7 +210,7 @@ const AgentFlowInner = ({ nodes, edges, onNodesChange, onEdgesChange, setNodes, 
 
       <AgentBuilderSidebar onAddNode={onAddNode} onReset={onReset} settings={settings} onUpdateSettings={onUpdateSettings} />
       
-      <div className="flex-1" ref={reactFlowWrapper}>
+      <div className="flex-1 h-full">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -222,6 +222,7 @@ const AgentFlowInner = ({ nodes, edges, onNodesChange, onEdgesChange, setNodes, 
           nodeTypes={nodeTypes}
           deleteKeyCode={['Backspace', 'Delete']}
           fitView
+          proOptions={{ hideAttribution: true }}
           className="bg-flow-bg"
           defaultEdgeOptions={{
             type: 'default',

@@ -29,14 +29,17 @@ const getEventName = (eventId: string) => eventId.replace(/-/g, "_");
 const generateImports = (json: WorkflowJson): string => {
   const imports = new Set<string>();
   const hasPromptAgent = json.nodes.some((node) => node.type === "promptAgent");
+  const hasPromptLLM = json.nodes.some((node) => node.type === "promptLLM");
   const hasTools = json.nodes.some(
     (node: any) =>
       node.type === "promptAgent" && node.tools && node.tools.length > 0,
   );
   const hasUserInput = json.nodes.some((node) => node.type === "userInput");
 
-  if (hasPromptAgent) {
-    imports.add('import { agent } from "@llamaindex/workflow";');
+  if (hasPromptAgent || hasPromptLLM) {
+    if (hasPromptAgent) {
+      imports.add('import { agent } from "@llamaindex/workflow";');
+    }
     const llmProvider = json.settings?.defaultLLM || "gpt-4o";
     if (llmProvider.startsWith("gpt")) {
       imports.add('import { OpenAI } from "@llamaindex/openai";');
@@ -87,7 +90,7 @@ const generateLlmInit = (json: WorkflowJson): string => {
     });
   }
 
-  if (json.nodes.some((node) => node.type === "promptAgent")) {
+  if (json.nodes.some((node) => node.type === "promptAgent" || node.type === "promptLLM")) {
     const llmProvider = json.settings?.defaultLLM || "gpt-4o";
     if (llmProvider.startsWith("gpt")) {
       lines.push(
@@ -231,8 +234,9 @@ const generateEvents = (nodes: WorkflowNodeJson[]): string => {
     .join("\n");
 };
 
-const generateHandlers = (nodes: WorkflowNodeJson[]): string => {
+const generateHandlers = (json: WorkflowJson): string => {
   let handlerLines: string[] = [];
+  const { nodes } = json;
 
   for (const node of nodes) {
     if (node.type === "stop") {
@@ -276,6 +280,36 @@ const generateHandlers = (nodes: WorkflowNodeJson[]): string => {
         (node as any).prompt?.replace(/`/g, "\\`") || "Enter your input:";
       handlerBody = `
     return ${needInputEventName}.with("${prompt}");`;
+    } else if (node.type === "promptLLM") {
+      const nodeData = node as any;
+      const model = nodeData.data?.model;
+      const temperature = nodeData.data?.temperature;
+      const settings = json.settings;
+      const defaultLLM = settings?.defaultLLM || "gpt-4o";
+
+      let llmToUse = "llm";
+      let llmDefinition = "";
+
+      if (model || typeof temperature !== "undefined") {
+        const llmVar = `llm_${node.id.replace(/-/g, "_")}`;
+        llmToUse = llmVar;
+        const defaultModelForProvider = defaultLLM.startsWith("gpt")
+          ? "gpt-4.1-mini"
+          : defaultLLM.startsWith("claude")
+            ? "claude-sonnet-4-20250514"
+            : "gemini-2.5-pro-latest";
+        const finalModel = model || defaultModelForProvider;
+        const tempValue = typeof temperature !== "undefined" ? temperature : 0.2;
+
+        let llmClass = "OpenAI";
+        if (defaultLLM.startsWith("claude")) llmClass = "Anthropic";
+        else if (defaultLLM.startsWith("gemini")) llmClass = "Gemini";
+        llmDefinition = `    const ${llmVar} = new ${llmClass}({ model: "${finalModel}", temperature: ${tempValue} });`;
+      }
+      handlerBody = `
+${llmDefinition}
+    const result = await ${llmToUse}.chat({ messages: [{ role: "user", content: typeof ctx.data === 'string' ? ctx.data : JSON.stringify(ctx.data) }]});
+    return ${nextEventName}.with(result.message.content);`;
     } else if (node.type === "promptAgent") {
       const toolNames =
         (node as any).tools?.map(
@@ -366,7 +400,7 @@ export const generateTypescript = (json: WorkflowJson): string => {
   const llmInit = generateLlmInit(json);
   const tools = generateTools(json);
   const events = generateEvents(json.nodes);
-  const handlers = generateHandlers(json.nodes);
+  const handlers = generateHandlers(json);
   const execution = generateExecution("startEvent", "stopEvent", json.nodes);
 
   return LlamaIndexTemplate(

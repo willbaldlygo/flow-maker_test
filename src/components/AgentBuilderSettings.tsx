@@ -31,6 +31,7 @@ interface AgentBuilderSettingsProps {
 }
 
 const AgentBuilderSettings = memo(({ settings, onUpdateSettings }: AgentBuilderSettingsProps) => {
+  const [isClient, setIsClient] = useState(false);
   const [showApiKeys, setShowApiKeys] = useState({
     llamaCloud: false,
     openai: false,
@@ -61,6 +62,10 @@ const AgentBuilderSettings = memo(({ settings, onUpdateSettings }: AgentBuilderS
       [key]: !prev[key]
     }));
   };
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Get the current API key based on selected LLM
   const getCurrentApiKey = () => {
@@ -118,6 +123,10 @@ const AgentBuilderSettings = memo(({ settings, onUpdateSettings }: AgentBuilderS
         return 'API';
     }
   };
+
+  if (!isClient) {
+    return null;
+  }
 
   return (
     <Card className="p-3 space-y-4">

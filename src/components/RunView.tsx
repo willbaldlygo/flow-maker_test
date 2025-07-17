@@ -74,6 +74,28 @@ const loadSavedGraph = () => {
   };
 };
 
+const getMessageContent = (data: any): string => {
+  if (typeof data === 'string') {
+    return data;
+  }
+  if (Array.isArray(data) && data.length > 0 && data[0].type === 'text' && typeof data[0].text === 'string') {
+    return data[0].text;
+  }
+  return JSON.stringify(data, null, 2);
+}
+
+const loadSavedSettings = () => {
+  try {
+    const savedSettings = localStorage.getItem('agent-builder-settings');
+    if (savedSettings) {
+      return JSON.parse(savedSettings);
+    }
+  } catch (error) {
+    console.error('Error loading saved settings:', error);
+  }
+  return {};
+}
+
 const RunViewInner = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -158,21 +180,61 @@ const RunViewInner = () => {
           // The workflow will now wait for user input.
           // The onUserInput function will be called when the user submits a message.
           return; // Don't proceed further until user input
-        case 'promptLLM':
-          // This will be handled similarly to promptAgent
-          const llmOutput = `Mock output from ${node.data.label}`;
+        case 'promptLLM': {
+          // find the previous node to get the input
+          const incomingEdge = edges.find((e) => e.target === nodeId);
+          const parentNodeId = incomingEdge?.source;
+          const input = parentNodeId ? workflowStateRef.current[parentNodeId] : null;
+
+          if (!input) {
+            setError(`Input for node ${nodeId} not found.`);
+            setExecutionStatus('error');
+            return;
+          }
+        
+          const thinkingMessageId = Math.random().toString();
           setMessages((prev) => [
             ...prev,
             {
-              id: Math.random().toString(),
+              id: thinkingMessageId,
               role: 'assistant',
-              content: `Executing ${node.data.label}...`,
+              content: `Thinking with ${node.data.label}...`,
             },
           ]);
+
+          const llmResponse = await fetch('/api/llm/call', {
+            method: 'POST',
+            body: JSON.stringify({
+              input: input,
+              node: node,
+              settings: loadSavedSettings()
+            }),
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!llmResponse.ok) {
+            throw new Error(
+              `LLM execution failed: ${await llmResponse.text()}`,
+            );
+          }
+
+          const { output: llmOutput } = await llmResponse.json();
+
           setWorkflowState((prevState) => ({
             ...prevState,
             [nodeId]: llmOutput,
           }));
+
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === thinkingMessageId
+                ? { ...msg, content: getMessageContent(llmOutput) }
+                : msg
+            )
+          );
+
           const llmEdge = edges.find((e) => e.source === nodeId);
           if (llmEdge) {
             nextNodeId = llmEdge.target;
@@ -180,6 +242,7 @@ const RunViewInner = () => {
             setExecutionStatus('finished');
           }
           break;
+        }
         case 'promptAgent':
           const compiledWorkflow = compileWorkflow(nodes, edges);
           const response = await fetch('/api/agent/run', {
@@ -207,7 +270,7 @@ const RunViewInner = () => {
             {
               id: Math.random().toString(),
               role: 'assistant',
-              content: output,
+              content: getMessageContent(output),
             },
           ]);
 
@@ -305,6 +368,7 @@ const RunViewInner = () => {
               nodesDraggable={false}
               nodesConnectable={false}
               elementsSelectable={false}
+              proOptions={{ hideAttribution: true }}
               className="bg-flow-bg"
               defaultEdgeOptions={{
                 type: 'default',

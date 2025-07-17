@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { OpenAI } from '@llamaindex/openai';
-import { Anthropic } from '@llamaindex/anthropic';
-import { Gemini, GEMINI_MODEL } from '@llamaindex/google';
 import { Settings, LLM, tool } from 'llamaindex';
 import { agent } from '@llamaindex/workflow';
 import { z } from 'zod';
+import { getLlm } from '@/lib/llm-utils';
 
 export async function POST(req: NextRequest) {
   try {
@@ -50,31 +48,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Configure LLM
-    const llmProvider = settings?.defaultLLM || 'gpt-4-turbo';
-    let llm;
-    let llmApiKey: string | undefined;
-
-    if (llmProvider.startsWith('gpt')) {
-      llmApiKey = settings?.apiKeys?.openai;
-      llm = new OpenAI({ model: 'gpt-4.1-mini', apiKey: llmApiKey });
-    } else if (llmProvider.startsWith('claude')) {
-      llmApiKey = settings?.apiKeys?.anthropic;
-      llm = new Anthropic({
-        model: 'claude-sonnet-4-20250514',
-        apiKey: llmApiKey,
-      });
-    } else if (llmProvider.startsWith('gemini')) {
-      llmApiKey = settings?.apiKeys?.google;
-      llm = new Gemini({
-        model: GEMINI_MODEL.GEMINI_PRO_LATEST,
-        apiKey: llmApiKey,
-      });
-    } else {
-      return NextResponse.json(
-        { error: `Unsupported LLM provider: ${llmProvider}` },
-        { status: 400 },
-      );
-    }
+    const llm = getLlm(settings);
 
     // 3. Create dynamic tools for the agent
     const tools: any[] = [];
