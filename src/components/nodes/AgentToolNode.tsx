@@ -2,6 +2,8 @@ import { memo, useState, useEffect } from 'react';
 import { Handle, Position, useReactFlow } from '@xyflow/react';
 import { Wrench } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Input } from '../ui/input';
+import { Textarea } from '../ui/textarea';
 
 interface AgentToolNodeProps {
   id: string;
@@ -27,6 +29,8 @@ const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
   const { setNodes } = useReactFlow();
   const [toolType, setToolType] = useState<string>(data.toolType || '');
   const [selectedIndex, setSelectedIndex] = useState<string>(data.config || '');
+  const [toolName, setToolName] = useState<string>('');
+  const [toolDescription, setToolDescription] = useState<string>('');
   const [pipelines, setPipelines] = useState<LlamaCloudPipeline[]>([]);
   const [loading, setLoading] = useState(false);
   const [configLoaded, setConfigLoaded] = useState(false);
@@ -84,6 +88,8 @@ const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
         const config = JSON.parse(savedConfig);
         setToolType(config.toolType || '');
         setSelectedIndex(config.selectedIndex || '');
+        setToolName(config.name || '');
+        setToolDescription(config.description || '');
         console.log('Loaded config from localStorage:', config);
       }
       setConfigLoaded(true);
@@ -92,20 +98,23 @@ const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
       setConfigLoaded(true);
     }
   }, [id]);
-  
-  // Save configuration to localStorage and update node data
-  const saveConfig = (newToolType: string, newSelectedIndex: string) => {
+
+  // Save configuration to localStorage and update node data whenever config state changes
+  useEffect(() => {
+    if (!configLoaded) return;
     try {
       const config = {
-        toolType: newToolType,
-        selectedIndex: newSelectedIndex
+        toolType,
+        selectedIndex,
+        name: toolName,
+        description: toolDescription,
       };
-      
+
       console.log('Saving config to localStorage:', config);
-      
+
       // Save to localStorage
       localStorage.setItem(`agent-tool-config-${id}`, JSON.stringify(config));
-      
+
       // Update node data in the flow graph
       setNodes((nodes) =>
         nodes.map((node) =>
@@ -114,9 +123,11 @@ const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
                 ...node,
                 data: {
                   ...node.data,
-                  toolType: newToolType,
-                  config: newSelectedIndex
-                }
+                  toolType,
+                  config: selectedIndex,
+                  name: toolName,
+                  description: toolDescription,
+                },
               }
             : node
         )
@@ -124,7 +135,7 @@ const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
     } catch (error) {
       console.error('Error saving agent tool config:', error);
     }
-  };
+  }, [toolType, selectedIndex, toolName, toolDescription, id, setNodes, configLoaded]);
   
 
   const fetchLlamaCloudData = async () => {
@@ -186,13 +197,11 @@ const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
   // Handle tool type change
   const handleToolTypeChange = (newToolType: string) => {
     setToolType(newToolType);
-    saveConfig(newToolType, selectedIndex);
   };
 
   // Handle index selection change
   const handleIndexChange = (newIndex: string) => {
     setSelectedIndex(newIndex);
-    saveConfig(toolType, newIndex);
   };
 
   return (
@@ -211,27 +220,43 @@ const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
           </Select>
           
           {toolType === 'llamacloud-index' && (
-            <Select 
-              value={pipelines.length > 0 ? selectedIndex : ""} 
-              onValueChange={handleIndexChange} 
-              disabled={loading || !apiKey}
-            >
-              <SelectTrigger className="w-full h-7 text-xs">
-                <SelectValue placeholder={
-                  loading ? "Loading..." : 
-                  !apiKey ? "No API key configured" : 
-                  pipelines.length === 0 ? "No indexes found" :
-                  "Select index"
-                } />
-              </SelectTrigger>
-              <SelectContent>
-                {pipelines.map((pipeline) => (
-                  <SelectItem key={pipeline.id} value={pipeline.id}>
-                    {pipeline.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <>
+              <Input
+                type="text"
+                placeholder="Tool Name"
+                value={toolName}
+                onChange={(e) => setToolName(e.target.value)}
+                className="w-full h-7 text-xs"
+              />
+              <Textarea
+                placeholder="Tool Description"
+                value={toolDescription}
+                onChange={(e) => setToolDescription(e.target.value)}
+                className="w-full text-xs"
+                rows={3}
+              />
+              <Select 
+                value={pipelines.length > 0 ? selectedIndex : ""} 
+                onValueChange={handleIndexChange} 
+                disabled={loading || !apiKey}
+              >
+                <SelectTrigger className="w-full h-7 text-xs">
+                  <SelectValue placeholder={
+                    loading ? "Loading..." : 
+                    !apiKey ? "No API key configured" : 
+                    pipelines.length === 0 ? "No indexes found" :
+                    "Select index"
+                  } />
+                </SelectTrigger>
+                <SelectContent>
+                  {pipelines.map((pipeline) => (
+                    <SelectItem key={pipeline.id} value={pipeline.id}>
+                      {pipeline.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </>
           )}
         </div>
       </div>

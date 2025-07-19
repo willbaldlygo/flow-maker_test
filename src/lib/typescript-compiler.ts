@@ -1,5 +1,28 @@
 import { WorkflowJson, WorkflowNodeJson } from "./workflow-compiler";
 
+const toCamelCase = (str: string): string => {
+  if (!str) return '';
+  const words = str.replace(/[^a-zA-Z0-9_]+/g, ' ').split(/[_\s]+/);
+
+  const camelCased = words
+    .filter(word => word.length > 0)
+    .map((word, index) => {
+      if (index === 0) {
+        return word.toLowerCase();
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join('');
+
+  if (!camelCased) return '';
+
+  if (/^\d/.test(camelCased)) {
+    return `_${camelCased}`;
+  }
+  
+  return camelCased;
+};
+
 const LlamaIndexTemplate = (
   imports: string,
   llmInit: string,
@@ -120,8 +143,9 @@ const generateTools = (json: WorkflowJson): string => {
 
   for (const tool of toolNodes) {
     if (tool.toolType === "llamacloud-index") {
-      const toolName =
-        tool.name || `search_index_${tool.id.replace(/-/g, "_")}`;
+      const toolDescription = tool.description || "Search index of resumes";
+      const baseName = tool.name || toolDescription.split(" ").at(0) || `search_index_${tool.id.replace(/-/g, "_")}`;
+      const camelCaseName = toCamelCase(baseName);
       const functionName = `search_index_func_${tool.id.replace(/-/g, "_")}`;
       const indexIdConst = `LLAMACLOUD_INDEX_ID_${tool.id.replace(/-/g, "_")}`;
 
@@ -181,14 +205,14 @@ const ${functionName} = async ( { query } : { query: string } ) => {
 
     const retrieverData = await retrieverResponse.json();
 
-    console.log(\`Retrieved \${retrieverData.nodes.length} nodes\`);
+    console.log("Retrieved " + retrieverData.nodes.length + " nodes");
 
     return JSON.stringify(retrieverData);
 };
 
-const ${toolName} = tool(${functionName}, {
-  name: '${tool.name || 'searchIndex'}',
-  description: '${tool.description || 'Search index of resumes'}',
+const ${camelCaseName} = tool(${functionName}, {
+  name: '${camelCaseName}',
+  description: '${toolDescription}',
   parameters: z.object({
     query: z.string({
       description: 'The query to search the index',
@@ -273,13 +297,39 @@ const generateHandlers = (json: WorkflowJson): string => {
     }
 
     let handlerBody = "";
-    if (node.type === "userInput") {
-      const gotInputEventName = getEventName(node.emits as string);
-      const needInputEventName = `need_input_for_${gotInputEventName}`;
-      const prompt =
-        (node as any).prompt?.replace(/`/g, "\\`") || "Enter your input:";
+    if (
+      node.emits &&
+      (node.type === "start" ||
+        node.type === "decision" ||
+        node.type === "splitter" ||
+        node.type === "collector")
+    ) {
+      const nextEventName = getEventName(node.emits as string);
+      handlerBody = `return ${nextEventName}.with(ctx.data);`;
+    } else if (node.type === "promptAgent" && node.emits) {
+      const nextEventName = getEventName(node.emits as string);
+      const toolNames =
+        (node as any).tools?.map(
+          (t: any) => {
+            const toolDescription = t.description || "Search index of resumes";
+            const baseName = t.name || toolDescription.split(" ").at(0) || `search_index_${t.id.replace(/-/g, "_")}`;
+            return toCamelCase(baseName);
+          }
+        ) || [];
+
+      const agentOptions: string[] = ["llm"];
+      if ((node as any).prompt) {
+        agentOptions.push(`systemPrompt: "${(node as any).prompt}"`);
+      }
+      if (toolNames.length > 0) {
+        agentOptions.push(`tools: [${toolNames.join(", ")}]`);
+      }
+
       handlerBody = `
-    return ${needInputEventName}.with("${prompt}");`;
+const configuredAgent = agent({ ${agentOptions.join(", ")} });
+const result = await configuredAgent.run({ input: ctx.data });
+return ${nextEventName}.with(result.response);
+`;
     } else if (node.type === "promptLLM") {
       const nodeData = node as any;
       const model = nodeData.data?.model;
@@ -310,38 +360,17 @@ const generateHandlers = (json: WorkflowJson): string => {
 ${llmDefinition}
     const result = await ${llmToUse}.chat({ messages: [{ role: "user", content: typeof ctx.data === 'string' ? ctx.data : JSON.stringify(ctx.data) }]});
     return ${nextEventName}.with(result.message.content);`;
-    } else if (node.type === "promptAgent") {
-      const toolNames =
-        (node as any).tools?.map(
-          (t: any) => t.name || `search_index_${t.id.replace(/-/g, "_")}`,
-        ) || [];
-
-      handlerBody = `
-    const indexAgent = agent({
-        llm: llm,
-        tools: [${toolNames.join(", ")}]
-    });
-    const result = await indexAgent.run(ctx.data);
-    return ${nextEventName}.with( result.data.result ?? "No result" );`;
-    } else {
-      handlerBody = `
-    return ${nextEventName}.with(ctx.data);`;
     }
 
-    handlerLines.push(`
-workflow.handle([${incomingEventNames.join(", ")}], async (ctx) => {${handlerBody}
-});
-`);
+    if (handlerBody) {
+      handlerLines.push(
+        `workflow.handle([${incomingEventNames.join(
+          ", ",
+        )}], async (ctx) => {\n    ${handlerBody}\n});`,
+      );
+    }
   }
-
-  // Add a final handler for the stop event
-  handlerLines.push(`
-workflow.handle([stopEvent], (ctx) => {
-    // Workflow stop.
-});
-`);
-
-  return handlerLines.join("\n");
+  return handlerLines.join("\n\n");
 };
 
 const generateExecution = (
