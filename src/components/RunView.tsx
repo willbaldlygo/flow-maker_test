@@ -39,6 +39,20 @@ import CollectorNode from './nodes/CollectorNode';
 import DecisionNode from './nodes/DecisionNode';
 import RunSidebar from './RunSidebar';
 
+interface WorkflowNodeJson {
+  id: string;
+  type: string;
+  data: any;
+  accepts?: string;
+  emits?: string;
+}
+
+interface WorkflowJson {
+  nodes: WorkflowNodeJson[];
+  settings: any;
+  error?: string;
+}
+
 // Node types mapping
 const nodeTypes = {
   start: StartNode,
@@ -102,6 +116,9 @@ const RunViewInner = () => {
   const [currentNodeId, setCurrentNodeId] = useState<string | null>(null);
   const [workflowState, _setWorkflowState] = useState<Record<string, any>>({});
   const workflowStateRef = useRef(workflowState);
+  const [compiledWorkflow, setCompiledWorkflow] = useState<WorkflowJson | null>(
+    null,
+  );
 
   const setWorkflowState = (data: React.SetStateAction<Record<string, any>>) => {
     const value =
@@ -143,9 +160,14 @@ const RunViewInner = () => {
     setEdges(savedGraph.edges);
   }, [setNodes, setEdges]);
 
-  const executeNode = async (nodeId: string) => {
+  const executeNode = async (nodeId: string, workflow: WorkflowJson) => {
+    if (!workflow || !workflow.nodes) {
+      setError('Workflow not compiled.');
+      setExecutionStatus('error');
+      return;
+    }
     setCurrentNodeId(nodeId);
-    const node = nodes.find((n) => n.id === nodeId);
+    const node = workflow.nodes.find((n) => n.id === `node-${nodeId}`);
 
     if (!node) {
       setError(`Node with ID ${nodeId} not found.`);
@@ -156,14 +178,17 @@ const RunViewInner = () => {
     try {
       let nextNodeId: string | null = null;
       switch (node.type) {
-        case 'start':
-          const connectedEdge = edges.find((e) => e.source === nodeId);
-          if (connectedEdge) {
-            nextNodeId = connectedEdge.target;
+        case 'start': {
+          const connectedNode = workflow.nodes.find(
+            (n) => n.accepts === node.emits,
+          );
+          if (connectedNode) {
+            nextNodeId = connectedNode.id.replace('node-', '');
           } else {
             setExecutionStatus('finished');
           }
           break;
+        }
         case 'userInput':
           setExecutionStatus('pausedForInput');
           // Add a system message to the chat with the prompt from the node
@@ -181,10 +206,12 @@ const RunViewInner = () => {
           // The onUserInput function will be called when the user submits a message.
           return; // Don't proceed further until user input
         case 'promptLLM': {
-          // find the previous node to get the input
-          const incomingEdge = edges.find((e) => e.target === nodeId);
-          const parentNodeId = incomingEdge?.source;
-          const input = parentNodeId ? workflowStateRef.current[parentNodeId] : null;
+          const parentNode = workflow.nodes.find(
+            (n) => n.emits === node.accepts,
+          );
+          const input = parentNode
+            ? workflowStateRef.current[parentNode.id.replace('node-', '')]
+            : null;
 
           if (!input) {
             setError(`Input for node ${nodeId} not found.`);
@@ -235,21 +262,27 @@ const RunViewInner = () => {
             )
           );
 
-          const llmEdge = edges.find((e) => e.source === nodeId);
-          if (llmEdge) {
-            nextNodeId = llmEdge.target;
+          const nextNode = workflow.nodes.find(
+            (n) => n.accepts === node.emits,
+          );
+          if (nextNode) {
+            nextNodeId = nextNode.id.replace('node-', '');
           } else {
             setExecutionStatus('finished');
           }
           break;
         }
         case 'promptAgent':
-          const compiledWorkflow = compileWorkflow(nodes, edges);
+          if (!workflow) {
+            setError('Workflow not compiled.');
+            setExecutionStatus('error');
+            return;
+          }
           const response = await fetch('/api/agent/run', {
             method: 'POST',
             body: JSON.stringify({
-              workflow: compiledWorkflow.nodes,
-              settings: compiledWorkflow.settings,
+              workflow: workflow,
+              settings: loadSavedSettings(),
               workflowState: workflowStateRef.current,
             }),
             headers: {
@@ -258,30 +291,30 @@ const RunViewInner = () => {
           });
 
           if (!response.ok) {
-            throw new Error(
-              `Agent execution failed: ${await response.text()}`,
-            );
+            throw new Error(`Agent execution failed: ${await response.text()}`);
           }
 
-          const { output } = await response.json();
+          const { output: agentOutput } = await response.json();
 
           setMessages((prev) => [
             ...prev,
             {
               id: Math.random().toString(),
               role: 'assistant',
-              content: getMessageContent(output),
+              content: getMessageContent(agentOutput),
             },
           ]);
 
           setWorkflowState((prevState) => ({
             ...prevState,
-            [nodeId]: output,
+            [nodeId]: agentOutput,
           }));
 
-          const agentEdge = edges.find((e) => e.source === nodeId);
-          if (agentEdge) {
-            nextNodeId = agentEdge.target;
+          const nextAgentNode = workflow.nodes.find(
+            (n) => n.accepts === node.emits,
+          );
+          if (nextAgentNode) {
+            nextNodeId = nextAgentNode.id.replace('node-', '');
           } else {
             setExecutionStatus('finished');
           }
@@ -289,13 +322,144 @@ const RunViewInner = () => {
         case 'stop':
           setExecutionStatus('finished');
           break;
-        default:
-          setExecutionStatus('finished');
+        case 'agentTool':
+          // This node is not executed directly in the run view
           break;
+        case 'splitter': {
+          const parentNode = workflow.nodes.find(
+            (n) => n.emits === node.accepts,
+          );
+          const input = parentNode
+            ? workflowStateRef.current[parentNode.id.replace('node-', '')]
+            : null;
+          if (input) {
+            setWorkflowState((prevState) => ({ ...prevState, [nodeId]: input }));
+          }
+          // The splitter itself doesn't have a single next node.
+          // The logic proceeds to all connected nodes from the output handles.
+          const outgoingNodes = workflow.nodes.filter(
+            (n) => n.accepts && n.accepts.startsWith(node.emits as string),
+          );
+          for (const outNode of outgoingNodes) {
+            await executeNode(outNode.id.replace('node-', ''), workflow);
+          }
+          return; // Custom branching, so we return here.
+        }
+        case 'collector': {
+          // Collector waits for all its inputs to be available.
+          // This simplified runner doesn't handle parallel execution fully,
+          // so we assume inputs arrive sequentially.
+          const parentNode = workflow.nodes.find(
+            (n) => n.emits === node.accepts,
+          );
+          const input = parentNode
+            ? workflowStateRef.current[parentNode.id.replace('node-', '')]
+            : null;
+          if (input) {
+            const currentState = workflowStateRef.current[nodeId] || [];
+            setWorkflowState((prevState) => ({
+              ...prevState,
+              [nodeId]: [...currentState, input],
+            }));
+          }
+
+          const nextCollectorNode = workflow.nodes.find(
+            (n) => n.accepts === node.emits,
+          );
+          if (nextCollectorNode) {
+            nextNodeId = nextCollectorNode.id.replace('node-', '');
+          } else {
+            setExecutionStatus('finished');
+          }
+          break;
+        }
+        case 'decision': {
+          const parentNode = workflow.nodes.find(
+            (n) => n.emits === node.accepts,
+          );
+          const input = parentNode
+            ? workflowStateRef.current[parentNode.id.replace('node-', '')]
+            : null;
+
+          if (!input) {
+            setError(`Input for node ${nodeId} not found.`);
+            setExecutionStatus('error');
+            return;
+          }
+
+          const thinkingMessageId = Math.random().toString();
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: thinkingMessageId,
+              role: 'assistant',
+              content: `Thinking with ${node.data.label}...`,
+            },
+          ]);
+
+          const llmResponse = await fetch('/api/llm/call', {
+            method: 'POST',
+            body: JSON.stringify({
+              input: input,
+              node: {
+                ...node,
+                data: {
+                  ...node.data,
+                  prompt: `Given the input, which of the following paths should be taken? The choices are: ${Object.keys(
+                    node.data.choices,
+                  ).join(', ')}. Please respond with only the name of the path.
+
+Input:
+${input}
+`,
+                },
+              },
+              settings: loadSavedSettings(),
+            }),
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!llmResponse.ok) {
+            throw new Error(
+              `LLM execution failed: ${await llmResponse.text()}`,
+            );
+          }
+
+          const { output: llmOutput } = await llmResponse.json();
+          const decision = getMessageContent(llmOutput).trim();
+
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === thinkingMessageId
+                ? { ...msg, content: `Decision: ${decision}` }
+                : msg,
+            ),
+          );
+
+          // Find the output handle that matches the decision
+          const choiceHandleId = (node.data.choices as any)[decision];
+          if (choiceHandleId) {
+            const nextDecisionNode = workflow.nodes.find(
+              (n) => n.accepts === choiceHandleId,
+            );
+            if (nextDecisionNode) {
+              nextNodeId = nextDecisionNode.id.replace('node-', '');
+            } else {
+              setExecutionStatus('finished');
+            }
+          } else {
+            setError(`No path found for decision: ${decision}`);
+            setExecutionStatus('error');
+            return;
+          }
+          break;
+        }
       }
 
       if (nextNodeId) {
-        await executeNode(nextNodeId);
+        await executeNode(nextNodeId, workflow);
       }
     } catch (e: any) {
       setError(e.message);
@@ -304,14 +468,26 @@ const RunViewInner = () => {
   };
 
   const handleRun = async () => {
-    setExecutionStatus('running');
+    setExecutionStatus('idle');
     setError(null);
+    setMessages([]);
     setWorkflowState({});
-    const startNode = nodes.find((n) => n.type === 'start');
+    setCurrentNodeId(null);
+
+    const compiled = compileWorkflow(nodes, edges);
+    if (!compiled || !compiled.nodes) {
+      setError('Could not compile workflow. Make sure you have a Start node.');
+      setExecutionStatus('error');
+      return;
+    }
+    setCompiledWorkflow(compiled);
+
+    const startNode = compiled.nodes.find((n: WorkflowNodeJson) => n.type === 'start');
     if (startNode) {
-      await executeNode(startNode.id);
+      setExecutionStatus('running');
+      await executeNode(startNode.id.replace('node-', ''), compiled);
     } else {
-      setError('No StartNode found in the graph.');
+      setError('No start node found in workflow.');
       setExecutionStatus('error');
     }
   };
@@ -325,18 +501,37 @@ const RunViewInner = () => {
   };
 
   const handleUserInput = async (message: Message) => {
-    if (executionStatus === 'pausedForInput' && currentNodeId) {
-      setWorkflowState((prevState) => ({
-        ...prevState,
-        [currentNodeId]: message.content,
-      }));
-      setExecutionStatus('running');
-      const connectedEdge = edges.find((e) => e.source === currentNodeId);
-      if (connectedEdge) {
-        await executeNode(connectedEdge.target);
-      } else {
-        setExecutionStatus('finished');
-      }
+    if (!compiledWorkflow) {
+      setError('Workflow not compiled.');
+      setExecutionStatus('error');
+      return;
+    }
+
+    const userInputNode = compiledWorkflow.nodes.find(
+      (n) => n.id === `node-${currentNodeId}`,
+    );
+
+    if (!userInputNode || userInputNode.type !== 'userInput') {
+      // This should not happen if the state is managed correctly
+      setError('Something went wrong. No user input expected.');
+      setExecutionStatus('error');
+      return;
+    }
+
+    setWorkflowState((prevState) => ({
+      ...prevState,
+      [currentNodeId as string]: message.content,
+    }));
+    setExecutionStatus('running');
+
+    const nextNode = compiledWorkflow.nodes.find(
+      (n) => n.accepts === userInputNode.emits,
+    );
+
+    if (nextNode) {
+      await executeNode(nextNode.id.replace('node-', ''), compiledWorkflow);
+    } else {
+      setExecutionStatus('finished');
     }
   };
 

@@ -55,7 +55,7 @@ const generateImports = (json: WorkflowJson): string => {
   const hasPromptLLM = json.nodes.some((node) => node.type === "promptLLM");
   const hasTools = json.nodes.some(
     (node: any) =>
-      node.type === "promptAgent" && node.tools && node.tools.length > 0,
+      node.type === "promptAgent" && node.data.tools && node.data.tools.length > 0,
   );
   const hasUserInput = json.nodes.some((node) => node.type === "userInput");
 
@@ -96,9 +96,9 @@ const generateLlmInit = (json: WorkflowJson): string => {
   const indexTools = json.nodes
     .filter(
       (node: any) =>
-        node.type === "promptAgent" && node.tools && node.tools.length > 0,
+        node.type === "promptAgent" && node.data.tools && node.data.tools.length > 0,
     )
-    .flatMap((node: any) => node.tools)
+    .flatMap((node: any) => node.data.tools)
     .filter((tool: any) => tool.toolType === "llamacloud-index");
 
   if (indexTools.length > 0) {
@@ -114,20 +114,37 @@ const generateLlmInit = (json: WorkflowJson): string => {
   }
 
   if (json.nodes.some((node) => node.type === "promptAgent" || node.type === "promptLLM")) {
-    const llmProvider = json.settings?.defaultLLM || "gpt-4o";
-    if (llmProvider.startsWith("gpt")) {
-      lines.push(
-        `const llm = new OpenAI({ model: "gpt-4.1-mini", temperature: 0.2 });`,
-      );
-    } else if (llmProvider.startsWith("claude")) {
-      lines.push(
-        `const llm = new Anthropic({ model: "claude-sonnet-4-20250514", temperature: 0.2 });`,
-      );
-    } else if (llmProvider.startsWith("gemini")) {
-      lines.push(
-        `const llm = new Gemini({ model: "gemini-2.5-pro-latest", temperature: 0.2 });`,
-      );
+    // Collect all unique LLM configurations
+    const llmConfigs = new Map<string, any>();
+    json.nodes.forEach(node => {
+      if ((node.type === "promptAgent" || node.type === "promptLLM") && node.data.llm) {
+        if (!llmConfigs.has(node.data.llm)) {
+          llmConfigs.set(node.data.llm, node.data);
+        }
+      }
+    });
+
+    if (llmConfigs.size === 0 && json.settings?.defaultLLM) {
+      // fallback to default
+      llmConfigs.set(json.settings.defaultLLM, {});
     }
+
+    llmConfigs.forEach((data, llmProvider) => {
+      const llmVarName = toCamelCase(llmProvider);
+      if (llmProvider.startsWith("gpt")) {
+        lines.push(
+          `const ${llmVarName} = new OpenAI({ model: "${llmProvider}", temperature: 0.2 });`,
+        );
+      } else if (llmProvider.startsWith("claude")) {
+        lines.push(
+          `const ${llmVarName} = new Anthropic({ model: "${llmProvider}", temperature: 0.2 });`,
+        );
+      } else if (llmProvider.startsWith("gemini")) {
+        lines.push(
+          `const ${llmVarName} = new Gemini({ model: "${llmProvider}", temperature: 0.2 });`,
+        );
+      }
+    });
   }
   return lines.join("\n");
 };
@@ -137,9 +154,9 @@ const generateTools = (json: WorkflowJson): string => {
   const toolNodes = json.nodes
     .filter(
       (node: any) =>
-        node.type === "promptAgent" && node.tools && node.tools.length > 0,
+        node.type === "promptAgent" && node.data.tools && node.data.tools.length > 0,
     )
-    .flatMap((node: any) => node.tools);
+    .flatMap((node: any) => node.data.tools);
 
   for (const tool of toolNodes) {
     if (tool.toolType === "llamacloud-index") {
@@ -263,114 +280,50 @@ const generateHandlers = (json: WorkflowJson): string => {
   const { nodes } = json;
 
   for (const node of nodes) {
-    if (node.type === "stop") {
-      continue;
-    }
-
-    let incomingEventNames: string[] = [];
-    if (node.type === "start") {
-      incomingEventNames.push("startEvent");
-    } else if (node.accepts) {
-      if (typeof node.accepts === "string") {
-        incomingEventNames.push(getEventName(node.accepts));
-      } else {
-        incomingEventNames.push(...node.accepts.map(getEventName));
-      }
-    }
-
-    if (incomingEventNames.length === 0) {
-      continue;
-    }
-
-    const nextNode = nodes.find((n) => n.accepts === node.emits);
-    const nextEventName =
-      nextNode?.type === "stop"
-        ? "stopEvent"
-        : node.emits && typeof node.emits === "string"
-          ? getEventName(node.emits)
-          : null;
-
-    if (!nextEventName) {
-      // For now, we skip nodes that don't have a clear single exit.
-      // This includes decision nodes.
-      continue;
-    }
-
-    let handlerBody = "";
-    if (
-      node.emits &&
-      (node.type === "start" ||
-        node.type === "decision" ||
-        node.type === "splitter" ||
-        node.type === "collector")
-    ) {
+    if (node.type === 'start') {
+      const startEventName = getEventName('startEvent');
       const nextEventName = getEventName(node.emits as string);
-      handlerBody = `return ${nextEventName}.with(ctx.data);`;
-    } else if (node.type === "promptAgent" && node.emits) {
-      const nextEventName = getEventName(node.emits as string);
-      const toolNames =
-        (node as any).tools?.map(
-          (t: any) => {
-            const toolDescription = t.description || "Search index of resumes";
-            const baseName = t.name || toolDescription.split(" ").at(0) || `search_index_${t.id.replace(/-/g, "_")}`;
-            return toCamelCase(baseName);
-          }
-        ) || [];
-
-      const agentOptions: string[] = ["llm"];
-      if ((node as any).prompt) {
-        agentOptions.push(`systemPrompt: "${(node as any).prompt}"`);
-      }
-      if (toolNames.length > 0) {
-        agentOptions.push(`tools: [${toolNames.join(", ")}]`);
-      }
-
-      handlerBody = `
-const configuredAgent = agent({ ${agentOptions.join(", ")} });
-const result = await configuredAgent.run({ input: ctx.data });
-return ${nextEventName}.with(result.response);
-`;
-    } else if (node.type === "promptLLM") {
-      const nodeData = node as any;
-      const model = nodeData.data?.model;
-      const temperature = nodeData.data?.temperature;
-      const settings = json.settings;
-      const defaultLLM = settings?.defaultLLM || "gpt-4o";
-
-      let llmToUse = "llm";
-      let llmDefinition = "";
-
-      if (model || typeof temperature !== "undefined") {
-        const llmVar = `llm_${node.id.replace(/-/g, "_")}`;
-        llmToUse = llmVar;
-        const defaultModelForProvider = defaultLLM.startsWith("gpt")
-          ? "gpt-4.1-mini"
-          : defaultLLM.startsWith("claude")
-            ? "claude-sonnet-4-20250514"
-            : "gemini-2.5-pro-latest";
-        const finalModel = model || defaultModelForProvider;
-        const tempValue = typeof temperature !== "undefined" ? temperature : 0.2;
-
-        let llmClass = "OpenAI";
-        if (defaultLLM.startsWith("claude")) llmClass = "Anthropic";
-        else if (defaultLLM.startsWith("gemini")) llmClass = "Gemini";
-        llmDefinition = `    const ${llmVar} = new ${llmClass}({ model: "${finalModel}", temperature: ${tempValue} });`;
-      }
-      handlerBody = `
-${llmDefinition}
-    const result = await ${llmToUse}.chat({ messages: [{ role: "user", content: typeof ctx.data === 'string' ? ctx.data : JSON.stringify(ctx.data) }]});
-    return ${nextEventName}.with(result.message.content);`;
-    }
-
-    if (handlerBody) {
-      handlerLines.push(
-        `workflow.handle([${incomingEventNames.join(
-          ", ",
-        )}], async (ctx) => {\n    ${handlerBody}\n});`,
-      );
+      handlerLines.push(`
+workflow.handle([${startEventName}], async (ctx) => {
+    return ${nextEventName}.with(ctx.data);
+});
+`);
+    } else if (node.type === 'userInput') {
+        const incomingEvent = getEventName(node.accepts as string);
+        const outgoingEvent = getEventName(node.emits as string);
+        const promptText = node.data.prompt || 'Please provide input:';
+        handlerLines.push(`
+workflow.handle([${incomingEvent}], async () => {
+    return need_input_for_${outgoingEvent}.with("${promptText}");
+});
+`);
+    } else if (node.type === 'promptAgent') {
+      const incomingEvent = getEventName(node.accepts as string);
+      const outgoingEvent = getEventName(node.emits as string);
+      
+      const toolNames = (node.data.tools || []).map((tool: any) => toCamelCase(tool.name));
+      const llmVarName = node.data.llm ? toCamelCase(node.data.llm) : toCamelCase(json.settings?.defaultLLM || "gpt-4o");
+      
+      handlerLines.push(`
+workflow.handle([${incomingEvent}], async (ctx) => {
+    const configuredAgent = agent({ 
+        llm: ${llmVarName}, 
+        tools: [${toolNames.join(', ')}] 
+    });
+    const result = await configuredAgent.run({ input: ctx.data });
+    return ${outgoingEvent}.with(result.response);
+});
+`);
+    } else if (node.type === 'stop') {
+        const incomingEvent = getEventName(node.accepts as string);
+        handlerLines.push(`
+workflow.handle([${incomingEvent}], async (ctx) => {
+    return stopEvent.with(ctx.data);
+});
+`);
     }
   }
-  return handlerLines.join("\n\n");
+  return handlerLines.join("\n");
 };
 
 const generateExecution = (

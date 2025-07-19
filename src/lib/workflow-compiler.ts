@@ -139,11 +139,12 @@ export function compileWorkflow(nodes: Node[], edges: Edge[]): any {
     const nodeJson: any = {
       id: `node-${node.id}`,
       type: node.type,
+      data: { ...node.data },
     };
     const outgoingEdges = edges.filter(e => e.source === node.id);
 
     if (node.type === 'promptAgent') {
-      nodeJson.tools = [];
+      nodeJson.data.tools = [];
       const toolEdges = outgoingEdges.filter(edge => {
         const targetNode = nodes.find(n => n.id === edge.target);
         return targetNode && targetNode.type === 'agentTool';
@@ -162,7 +163,7 @@ export function compileWorkflow(nodes: Node[], edges: Edge[]): any {
             }
           }
           // This should just be the tool node's data, not a recursive call.
-          nodeJson.tools.push({
+          nodeJson.data.tools.push({
             id: `node-${toolNode.id}`,
             type: toolNode.type,
             name: toolNode.data.label,
@@ -174,15 +175,15 @@ export function compileWorkflow(nodes: Node[], edges: Edge[]): any {
 
     if (node.type === 'promptAgent' && node.data) {
       if (node.data.llm) {
-        nodeJson.llm = node.data.llm;
+        nodeJson.data.llm = node.data.llm;
       }
       if (node.data.systemPrompt) {
-        nodeJson.prompt = node.data.systemPrompt;
+        nodeJson.data.prompt = node.data.systemPrompt;
       }
     }
 
     if (node.type === 'userInput' && node.data && node.data.prompt) {
-      nodeJson.prompt = node.data.prompt;
+      nodeJson.data.prompt = node.data.prompt;
     }
 
     const primaryEdge = node.type === 'promptAgent'

@@ -4,11 +4,34 @@ import { agent } from '@llamaindex/workflow';
 import { z } from 'zod';
 import { getLlm } from '@/lib/llm-utils';
 
+const toCamelCase = (str: string): string => {
+  if (!str) return '';
+  const words = str.replace(/[^a-zA-Z0-9_]+/g, ' ').split(/[_\s]+/);
+
+  const camelCased = words
+    .filter(word => word.length > 0)
+    .map((word, index) => {
+      if (index === 0) {
+        return word.toLowerCase();
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join('');
+
+  if (!camelCased) return '';
+
+  if (/^\d/.test(camelCased)) {
+    return `_${camelCased}`;
+  }
+  
+  return camelCased;
+};
+
 export async function POST(req: NextRequest) {
   try {
     console.log('Agent run request received');
     const { workflow, settings, workflowState } = await req.json();
-    const agentNode = workflow.find((n: any) => n.type === 'promptAgent');
+    const agentNode = workflow.nodes.find((n: any) => n.type === 'promptAgent');
     console.log('Found agent node:', agentNode?.id);
 
     if (!agentNode) {
@@ -27,7 +50,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 1. Get user input
-    const inputEdge = workflow.find(
+    const inputEdge = workflow.nodes.find(
       (n: any) => n.emits === agentNode.accepts,
     );
     if (!inputEdge) {
@@ -48,13 +71,17 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Configure LLM
-    const llm = getLlm(settings);
+    const llm = getLlm(settings) as LLM<object, object> & {
+      supportToolCall: true;
+      exec(options: any): any;
+      streamExec(options: any): any;
+    };
 
     // 3. Create dynamic tools for the agent
     const tools: any[] = [];
-    if (agentNode.tools && agentNode.tools.length > 0) {
-      console.log(`Creating ${agentNode.tools.length} tools...`);
-      for (const toolConfig of agentNode.tools) {
+    if (agentNode.data.tools && agentNode.data.tools.length > 0) {
+      console.log(`Creating ${agentNode.data.tools.length} tools...`);
+      for (const toolConfig of agentNode.data.tools) {
         const toolFunc = async ({ query }: { query: string }) => {
           console.log(
             `Tool '${toolConfig.name}' called with query: "${query}"`,
@@ -114,7 +141,7 @@ export async function POST(req: NextRequest) {
           return JSON.stringify(retrieverData);
         };
 
-        const sanitizedToolName = toolConfig.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+        const sanitizedToolName = toCamelCase(toolConfig.name);
         const dynamicTool = tool(toolFunc, {
           name: sanitizedToolName,
           description:
@@ -134,6 +161,7 @@ export async function POST(req: NextRequest) {
     const workflowAgent = agent({
       tools,
       llm,
+      systemPrompt: agentNode.data.prompt
     });
 
     console.log('Running agent...');
