@@ -15,7 +15,7 @@ const SplitterNode = memo(({ data, selected }: SplitterNodeProps) => {
     <div className={`agent-node node-splitter ${selected ? 'selected' : ''}`}>
       <div className="node-content flex flex-col items-center justify-center text-foreground p-4 min-w-[140px]" style={{ transform: 'skewX(20deg)' }}>
         <Split className="w-5 h-5 mb-2" />
-        <span className="text-sm font-medium mb-2">{data.label || 'Splitter'}</span>
+        <span className="text-sm font-medium">{data.label || 'Splitter'}</span>
         <input 
           type="text" 
           placeholder={data.splitType || 'Split logic'}
@@ -23,9 +23,26 @@ const SplitterNode = memo(({ data, selected }: SplitterNodeProps) => {
           onClick={(e) => e.stopPropagation()}
         />
       </div>
-      <Handle type="target" position={Position.Top} />
-      <Handle type="source" position={Position.Bottom} id="output1" style={{ left: '30%' }} />
-      <Handle type="source" position={Position.Bottom} id="output2" style={{ left: '70%' }} />
+      <Handle
+        type="target"
+        position={Position.Top}
+        style={{
+          width: '16px',
+          height: '16px',
+          border: '3px solid hsl(var(--primary))',
+          backgroundColor: 'hsl(var(--card))',
+        }}
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        style={{
+          width: '16px',
+          height: '16px',
+          border: '3px solid hsl(var(--primary))',
+          backgroundColor: 'hsl(var(--primary))',
+        }}
+      />
     </div>
   );
 });

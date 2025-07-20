@@ -12,11 +12,20 @@ interface StartNodeProps {
 const StartNode = memo(({ data, selected }: StartNodeProps) => {
   return (
     <div className={`agent-node node-start ${selected ? 'selected' : ''}`}>
-      <div className="node-content flex flex-col items-center justify-center text-white">
-        <Play className="w-6 h-6 mb-1" fill="currentColor" />
-        <span className="text-xs font-medium">{data.label || 'Start'}</span>
+      <div className="node-content flex flex-col items-center justify-center text-primary-foreground">
+        <Play className="w-5 h-5 mb-1" />
+        <span className="text-sm font-medium">{data.label || 'Start'}</span>
       </div>
-      <Handle type="source" position={Position.Bottom} />
+      <Handle 
+        type="source" 
+        position={Position.Bottom}
+        style={{
+          width: '16px',
+          height: '16px',
+          border: '3px solid hsl(var(--primary))',
+          backgroundColor: 'hsl(var(--primary))',
+        }}
+      />
     </div>
   );
 });

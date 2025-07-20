@@ -39,8 +39,26 @@ const UserInputNode = memo(({ id, data, selected }: UserInputNodeProps) => {
           onClick={(e) => e.stopPropagation()}
         />
       </div>
-      <Handle type="target" position={Position.Top} />
-      <Handle type="source" position={Position.Bottom} />
+      <Handle
+        type="target"
+        position={Position.Top}
+        style={{
+          width: '16px',
+          height: '16px',
+          border: '3px solid hsl(var(--primary))',
+          backgroundColor: 'hsl(var(--card))',
+        }}
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        style={{
+          width: '16px',
+          height: '16px',
+          border: '3px solid hsl(var(--primary))',
+          backgroundColor: 'hsl(var(--primary))',
+        }}
+      />
     </div>
   );
 });

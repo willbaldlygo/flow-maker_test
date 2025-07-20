@@ -167,7 +167,7 @@ const AgentBuilderSettings = memo(({ settings, onUpdateSettings }: AgentBuilderS
             <SelectValue placeholder="Select default LLM" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="gpt-4o">GPT-4o</SelectItem>
+            <SelectItem value="gpt-4o">GPT 4.1</SelectItem>
             <SelectItem value="claude-sonnet">Claude Sonnet</SelectItem>
             <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
           </SelectContent>

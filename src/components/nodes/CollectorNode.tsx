@@ -15,7 +15,7 @@ const CollectorNode = memo(({ data, selected }: CollectorNodeProps) => {
     <div className={`agent-node node-collector ${selected ? 'selected' : ''}`}>
       <div className="node-content flex flex-col items-center justify-center text-foreground p-4 min-w-[140px]" style={{ transform: 'skewX(20deg)' }}>
         <Merge className="w-5 h-5 mb-2" />
-        <span className="text-sm font-medium mb-2">{data.label || 'Collector'}</span>
+        <span className="text-sm font-medium">{data.label || 'Collector'}</span>
         <input 
           type="text" 
           placeholder={data.mergeType || 'Merge logic'}
@@ -23,9 +23,26 @@ const CollectorNode = memo(({ data, selected }: CollectorNodeProps) => {
           onClick={(e) => e.stopPropagation()}
         />
       </div>
-      <Handle type="target" position={Position.Top} id="input1" style={{ left: '30%' }} />
-      <Handle type="target" position={Position.Top} id="input2" style={{ left: '70%' }} />
-      <Handle type="source" position={Position.Bottom} />
+      <Handle
+        type="target"
+        position={Position.Top}
+        style={{
+          width: '16px',
+          height: '16px',
+          border: '3px solid hsl(var(--primary))',
+          backgroundColor: 'hsl(var(--card))',
+        }}
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        style={{
+          width: '16px',
+          height: '16px',
+          border: '3px solid hsl(var(--primary))',
+          backgroundColor: 'hsl(var(--primary))',
+        }}
+      />
     </div>
   );
 });

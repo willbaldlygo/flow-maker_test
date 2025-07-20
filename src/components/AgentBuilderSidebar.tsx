@@ -65,9 +65,9 @@ const nodeTemplates = [
     { type: 'promptLLM', label: 'Prompt LLM', description: 'Send prompts to language models', icon: Brain },
     { type: 'promptAgent', label: 'Prompt Agent', description: 'Configure and prompt AI agents', icon: Bot },
     { type: 'agentTool', label: 'Agent Tool', description: 'Tools and functions for agents', icon: Wrench },
+    { type: 'decision', label: 'Decision', description: 'Conditional branching logic', icon: GitBranch },
     { type: 'splitter', label: 'Splitter', description: 'Split flow into multiple paths', icon: Split },
     { type: 'collector', label: 'Collector', description: 'Merge multiple flows together', icon: Merge },
-    { type: 'decision', label: 'Decision', description: 'Conditional branching logic', icon: GitBranch },
   ];
 
 const AgentBuilderSidebar = ({ onAddNode, onReset, settings, onUpdateSettings }: AgentBuilderSidebarProps) => {

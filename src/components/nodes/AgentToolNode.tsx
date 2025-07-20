@@ -249,11 +249,7 @@ const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
                   } />
                 </SelectTrigger>
                 <SelectContent>
-                  {pipelines.map((pipeline) => (
-                    <SelectItem key={pipeline.id} value={pipeline.id}>
-                      {pipeline.name}
-                    </SelectItem>
-                  ))}
+                  {pipelines.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </>
@@ -270,10 +266,8 @@ const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
           borderRadius: '0', 
           transform: 'rotate(45deg)',
           backgroundColor: 'white',
-          border: '2px solid var(--handle-border-color-default)',
+          border: '2px solid hsl(var(--node-tool))',
           left: '-6px',
-          top: '50%',
-          marginTop: '-6px'
         }} 
       />
     </div>

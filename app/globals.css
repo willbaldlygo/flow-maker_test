@@ -243,26 +243,27 @@ All colors MUST be HSL.
 
 /* Handle Styles */
 .react-flow__handle {
-  width: 16px;
-  height: 16px;
-  border: 3px solid hsl(var(--primary));
+  width: 8px;
+  height: 8px;
+  background: hsl(var(--border));
+  border: none;
   border-radius: 50%;
   transition: var(--transition-smooth);
   cursor: pointer;
 }
 
-/* Input handles (target type, usually top) - hollow with white background */
-.react-flow__handle[data-handlepos="top"],
-.react-flow__handle.target {
-  background: white !important;
-  border: 3px solid hsl(var(--primary)) !important;
+.react-flow__handle:hover {
+  transform: scale(1.2);
 }
 
-/* Output handles (source type, usually bottom) - solid colored */
-.react-flow__handle[data-handlepos="bottom"],
-.react-flow__handle.source {
-  background: hsl(var(--primary)) !important;
-  border: 3px solid hsl(var(--primary)) !important;
+.react-flow__handle.react-flow__handle-target {
+  border: 3px solid hsl(var(--primary));
+  background-color: hsl(var(--card));
+}
+
+.react-flow__handle.react-flow__handle-source {
+  border: 3px solid hsl(var(--primary));
+  background-color: hsl(var(--primary));
 }
 
 .react-flow__handle:hover {

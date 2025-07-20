@@ -125,8 +125,26 @@ const PromptAgentNode = memo(({ id, data, selected }: PromptAgentNodeProps) => {
           )}
         </div>
       </div>
-      <Handle type="target" position={Position.Top} />
-      <Handle type="source" position={Position.Bottom} id="output" />
+      <Handle
+        type="target"
+        position={Position.Top}
+        style={{
+          width: '16px',
+          height: '16px',
+          border: '3px solid hsl(var(--primary))',
+          backgroundColor: 'hsl(var(--card))',
+        }}
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        style={{
+          width: '16px',
+          height: '16px',
+          border: '3px solid hsl(var(--primary))',
+          backgroundColor: 'hsl(var(--primary))',
+        }}
+      />
       <Handle 
         type="source" 
         position={Position.Right} 
@@ -141,6 +159,20 @@ const PromptAgentNode = memo(({ id, data, selected }: PromptAgentNodeProps) => {
           right: '-6px',
           top: '50%',
           marginTop: '-6px'
+        }} 
+      />
+      <Handle 
+        type="source" 
+        position={Position.Right} 
+        id="tool"
+        style={{ 
+          width: '12px', 
+          height: '12px', 
+          borderRadius: '0', 
+          transform: 'rotate(45deg)',
+          backgroundColor: 'hsl(var(--node-agent))',
+          border: '2px solid hsl(var(--node-agent))',
+          right: '-6px',
         }} 
       />
     </div>
