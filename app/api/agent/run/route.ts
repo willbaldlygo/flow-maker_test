@@ -49,26 +49,40 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. Get user input
-    const inputEdge = workflow.nodes.find(
-      (n: any) => n.emits === agentNode.accepts,
-    );
-    if (!inputEdge) {
+    // 1. Get user input by traversing backwards from the agent node
+    let currentNode = agentNode;
+    let userInput = null;
+    let visited = new Set(); // To prevent infinite loops in case of cycles
+
+    while (currentNode && !visited.has(currentNode.id)) {
+      visited.add(currentNode.id);
+      const parentNode = workflow.nodes.find(
+        (n: any) => n.emits === currentNode.accepts || (typeof n.emits === 'object' && Object.values(n.emits).includes(currentNode.accepts)),
+      );
+      
+      if (!parentNode) {
+        break;
+      }
+
+      const parentNodeId = parentNode.id.replace('node-', '');
+      const parentState = workflowState[parentNodeId];
+
+      if (parentState) {
+        userInput = parentState;
+        break;
+      }
+      
+      currentNode = parentNode;
+    }
+
+    if (!userInput) {
       return NextResponse.json(
         { error: 'Could not find input for agent' },
         { status: 400 },
       );
     }
-    const inputNodeId = inputEdge.id.replace('node-', '');
-    const userInput = workflowState[inputNodeId];
     console.log(`User input for agent: "${userInput}"`);
 
-    if (!userInput) {
-      return NextResponse.json(
-        { error: 'User input not found' },
-        { status: 400 },
-      );
-    }
 
     // 2. Configure LLM
     const llm = getLlm(settings) as LLM<object, object> & {

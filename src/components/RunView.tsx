@@ -207,7 +207,10 @@ const RunViewInner = () => {
           return; // Don't proceed further until user input
         case 'promptLLM': {
           const parentNode = workflow.nodes.find(
-            (n) => n.emits === node.accepts,
+            (n) =>
+              n.emits === node.accepts ||
+              (typeof n.emits === 'object' &&
+                Object.values(n.emits).includes(node.accepts as string)),
           );
           const input = parentNode
             ? workflowStateRef.current[parentNode.id.replace('node-', '')]
@@ -578,7 +581,9 @@ const RunViewInner = () => {
                       placeholder={
                         executionStatus === 'pausedForInput'
                           ? 'Please provide your input'
-                          : 'Waiting for agent...'
+                          : executionStatus === 'finished'
+                            ? 'Workflow finished. Click Restart to run again.'
+                            : 'Waiting for agent...'
                       }
                     />
                     {chatHandler.isLoading ? (
@@ -586,7 +591,9 @@ const RunViewInner = () => {
                         <LoaderCircle className="spinner" />
                       </div>
                     ) : (
-                      <ChatInput.Submit />
+                      <ChatInput.Submit
+                        disabled={executionStatus !== 'pausedForInput'}
+                      />
                     )}
                   </ChatInput.Form>
                 </ChatInput>
