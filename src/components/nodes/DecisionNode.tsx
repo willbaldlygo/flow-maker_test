@@ -19,7 +19,7 @@ const DecisionNode = memo(({ data, selected }: DecisionNodeProps) => {
       </div>
       <Handle
         type="target"
-        position={Position.Left}
+        position={Position.Top}
         style={{
           width: '16px',
           height: '16px',
@@ -29,7 +29,7 @@ const DecisionNode = memo(({ data, selected }: DecisionNodeProps) => {
       />
       <Handle
         type="source"
-        position={Position.Right}
+        position={Position.Bottom}
         style={{
           width: '16px',
           height: '16px',

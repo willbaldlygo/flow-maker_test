@@ -233,8 +233,10 @@ All colors MUST be HSL.
   border-color: hsl(var(--node-decision));
   background: hsl(var(--card));
   transform: rotate(45deg);
-  width: 100px;
-  height: 100px;
+  width: 100px !important;
+  height: 100px !important;
+  min-width: 100px !important;
+  min-height: 100px !important;
 }
 
 .node-decision .node-content {
