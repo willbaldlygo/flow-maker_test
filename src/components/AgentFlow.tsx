@@ -120,7 +120,7 @@ const AgentFlowInner = ({ nodes, edges, onNodesChange, onEdgesChange, setNodes, 
       const newEdge: Edge = {
         ...params,
         id: `edge-${params.source}-${params.target}`,
-        type: 'default',
+        type: 'smoothstep',
         animated: false,
         label,
         style: {
@@ -237,7 +237,7 @@ const AgentFlowInner = ({ nodes, edges, onNodesChange, onEdgesChange, setNodes, 
           proOptions={{ hideAttribution: true }}
           className="bg-flow-bg"
           defaultEdgeOptions={{
-            type: 'default',
+            type: 'smoothstep',
             animated: false,
             style: {
               strokeWidth: 2,
