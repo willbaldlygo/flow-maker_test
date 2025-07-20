@@ -1,3 +1,4 @@
+import { getLlmModelName } from "./llm-utils";
 import { WorkflowJson, WorkflowNodeJson } from "./workflow-compiler";
 
 const toCamelCase = (str: string): string => {
@@ -59,6 +60,16 @@ const generateImports = (json: WorkflowJson): string => {
   );
   const hasUserInput = json.nodes.some((node) => node.type === "userInput");
 
+  if (json.settings?.apiKeys?.openai) {
+    imports.add('process.env.OPENAI_API_KEY = "dummy";'); // prevent fallback to env
+  }
+  if (json.settings?.apiKeys?.anthropic) {
+    imports.add('process.env.ANTHROPIC_API_KEY = "dummy";');
+  }
+  if (json.settings?.apiKeys?.google) {
+    imports.add('process.env.GOOGLE_API_KEY = "dummy";');
+  }
+
   if (hasPromptAgent || hasPromptLLM) {
     if (hasPromptAgent) {
       imports.add('import { agent } from "@llamaindex/workflow";');
@@ -93,6 +104,16 @@ const generateLlmInit = (json: WorkflowJson): string => {
     );
   }
 
+  if (json.settings?.apiKeys?.openai) {
+    lines.push(`const OPENAI_API_KEY = "${json.settings.apiKeys.openai}";`);
+  }
+  if (json.settings?.apiKeys?.anthropic) {
+    lines.push(`const ANTHROPIC_API_KEY = "${json.settings.apiKeys.anthropic}";`);
+  }
+  if (json.settings?.apiKeys?.google) {
+    lines.push(`const GOOGLE_API_KEY = "${json.settings.apiKeys.google}";`);
+  }
+
   const indexTools = json.nodes
     .filter(
       (node: any) =>
@@ -114,34 +135,36 @@ const generateLlmInit = (json: WorkflowJson): string => {
   }
 
   if (json.nodes.some((node) => node.type === "promptAgent" || node.type === "promptLLM")) {
-    // Collect all unique LLM configurations
     const llmConfigs = new Map<string, any>();
     json.nodes.forEach(node => {
-      if ((node.type === "promptAgent" || node.type === "promptLLM") && node.data.llm) {
-        if (!llmConfigs.has(node.data.llm)) {
-          llmConfigs.set(node.data.llm, node.data);
+      if ((node.type === "promptAgent" || node.type === "promptLLM")) {
+        const llmIdentifier = node.data.llm || json.settings?.defaultLLM;
+        if (llmIdentifier && !llmConfigs.has(llmIdentifier)) {
+          llmConfigs.set(llmIdentifier, { data: node.data });
         }
       }
     });
 
     if (llmConfigs.size === 0 && json.settings?.defaultLLM) {
-      // fallback to default
-      llmConfigs.set(json.settings.defaultLLM, {});
+      llmConfigs.set(json.settings.defaultLLM, { data: {} });
     }
 
-    llmConfigs.forEach((data, llmProvider) => {
-      const llmVarName = toCamelCase(llmProvider);
+    llmConfigs.forEach((nodeData, llmProvider) => {
+      const modelName = getLlmModelName(json.settings, nodeData);
+      const llmVarName = toCamelCase(modelName);
+      const temperature = nodeData?.data?.temperature ?? 0.2;
+
       if (llmProvider.startsWith("gpt")) {
         lines.push(
-          `const ${llmVarName} = new OpenAI({ model: "${llmProvider}", temperature: 0.2 });`,
+          `const ${llmVarName} = new OpenAI({ model: "${modelName}", temperature: ${temperature}, apiKey: OPENAI_API_KEY });`,
         );
       } else if (llmProvider.startsWith("claude")) {
         lines.push(
-          `const ${llmVarName} = new Anthropic({ model: "${llmProvider}", temperature: 0.2 });`,
+          `const ${llmVarName} = new Anthropic({ model: "${modelName}", temperature: ${temperature}, apiKey: ANTHROPIC_API_KEY });`,
         );
       } else if (llmProvider.startsWith("gemini")) {
         lines.push(
-          `const ${llmVarName} = new Gemini({ model: "${llmProvider}", temperature: 0.2 });`,
+          `const ${llmVarName} = new Gemini({ model: "${modelName}", temperature: ${temperature}, apiKey: GOOGLE_API_KEY });`,
         );
       }
     });
@@ -302,16 +325,26 @@ workflow.handle([${incomingEvent}], async () => {
       const outgoingEvent = getEventName(node.emits as string);
       
       const toolNames = (node.data.tools || []).map((tool: any) => toCamelCase(tool.name));
-      const llmVarName = node.data.llm ? toCamelCase(node.data.llm) : toCamelCase(json.settings?.defaultLLM || "gpt-4o");
+      const modelName = getLlmModelName(json.settings, { data: node.data });
+      const llmVarName = toCamelCase(modelName);
+      const systemPrompt = node.data.prompt;
+
+      const agentProperties = [
+        `llm: ${llmVarName}`,
+        `tools: [${toolNames.join(", ")}]`,
+      ];
+
+      if (systemPrompt) {
+        agentProperties.push(`systemPrompt: ${JSON.stringify(systemPrompt)}`);
+      }
       
       handlerLines.push(`
 workflow.handle([${incomingEvent}], async (ctx) => {
     const configuredAgent = agent({ 
-        llm: ${llmVarName}, 
-        tools: [${toolNames.join(', ')}] 
+        ${agentProperties.join(",\n        ")} 
     });
-    const result = await configuredAgent.run({ input: ctx.data });
-    return ${outgoingEvent}.with(result.response);
+    const result = await configuredAgent.run(ctx.data);
+    return ${outgoingEvent}.with(result.data.result);
 });
 `);
     } else if (node.type === 'stop') {

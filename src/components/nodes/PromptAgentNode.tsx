@@ -19,7 +19,7 @@ const PromptAgentNode = memo(({ id, data, selected }: PromptAgentNodeProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [tempPrompt, setTempPrompt] = useState('');
 
-  const defaultPrompt = "You are a helpful agent who takes ${input} and does something with it";
+  const defaultPrompt = "You are a helpful agent who takes user input and does something with it";
 
   useEffect(() => {
     if (!data.systemPrompt) {
