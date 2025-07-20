@@ -1,73 +1,62 @@
-# Welcome to your Lovable project
+# Llama Agent Creator
 
-## Project info
+This is a tool for visually creating and exporting agentic workflows powered by LlamaIndex. It provides a drag-and-drop interface to build complex workflows, run them interactively, and then compile them into standalone TypeScript code.
 
-**URL**: https://lovable.dev/projects/2a4895ef-946a-48eb-bf94-ebed1374b664
+It's open sourced under the MIT license, so you can run it locally and modify it to add features (there are a lot of obvious things to add!).
 
-## How can I edit this code?
+## ✨ Features
 
-There are several ways of editing your application.
+-   **Visual Editor**: Use a drag-and-drop canvas powered by `@xyflow/react` to design your agent's logic.
+-   **Interactive Debugging**: Run your workflow directly in the browser to test and debug its behavior step-by-step.
+-   **Code Generation**: Compile your visual workflow into standalone TypeScript code using `@llamaindex/workflow-core`.
+-   **LLM Integration**: Supports multiple LLM providers like OpenAI, Anthropic, and Google.
+-   **Tool Support**: Easily integrate tools into your agent to interact with external services.
 
-**Use Lovable**
+## 🚀 Getting Started
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/2a4895ef-946a-48eb-bf94-ebed1374b664) and start prompting.
+Follow these steps to get the project running locally.
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+-   [Node.js](https://nodejs.org/en) (v18.0 or higher recommended)
+-   `npm` or your preferred package manager
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Installation & Setup
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1.  **Clone the repository:**
+    ```sh
+    git clone <YOUR_GIT_URL>
+    cd llama-agent-creator
+    ```
 
-Follow these steps:
+2.  **Install dependencies:**
+    ```sh
+    npm install
+    ```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+3.  **Run the development server:**
+    ```sh
+    npm run dev
+    ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Running and debugging
 
-# Step 3: Install the necessary dependencies.
-npm i
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result. If you access it in [debug mode](http://localhost:3000?debug=1), you'll get an extra "intermediate" compiler that shows you more about what's happening under the hood. This is very useful when trying to debug something that works in the compiled TypeScript but not the interactive Run View or vice versa.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+## 🛠️ Tech Stack
 
-**Edit a file directly in GitHub**
+-   **Framework**: [Next.js](https://nextjs.org/)
+-   **Language**: [TypeScript](https://www.typescriptlang.org/)
+-   **UI**: [React](https://react.dev/) & [shadcn/ui](https://ui.shadcn.com/)
+-   **Graph UI**: [`@xyflow/react`](https://reactflow.dev/)
+-   **Workflow Engine**: [`@llamaindex/workflow-core`](https://www.npmjs.com/package/@llamaindex/workflow-core)
+-   **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Architecture Overview
 
-**Use GitHub Codespaces**
+The application has a dual-execution model:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+1.  **Interactive Runner**: The UI in `src/components/RunView.tsx` executes the workflow step-by-step in the browser, making calls to backend API routes in `app/api/` for LLM and tool operations.
+2.  **TypeScript Compiler**: The logic in `src/lib/typescript-compiler.ts` takes the same visual graph and generates a standalone Node.js script that can be run independently.
 
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/2a4895ef-946a-48eb-bf94-ebed1374b664) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+When modifying node behavior, ensure consistency by updating logic in both the corresponding API route and the TypeScript compiler. See ./cursor/rules for more information about how this works.
