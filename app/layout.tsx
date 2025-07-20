@@ -10,6 +10,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Llama Agent Creator",
   description: "A visual agent builder for LlamaIndex",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({

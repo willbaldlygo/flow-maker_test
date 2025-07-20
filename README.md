@@ -12,6 +12,10 @@ It's open sourced under the MIT license, so you can run it locally and modify it
 -   **LLM Integration**: Supports multiple LLM providers like OpenAI, Anthropic, and Google.
 -   **Tool Support**: Easily integrate tools into your agent to interact with external services.
 
+### Existing tools
+
+Currently the only tool implemented is a LlamaCloud index search tool, which requires a LlamaCloud API key.
+
 ## 🚀 Getting Started
 
 Follow these steps to get the project running locally.
