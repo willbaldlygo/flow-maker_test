@@ -14,72 +14,6 @@ export interface WorkflowJson {
     settings: any;
 }
 
-function buildNodeJson(node: Node, allNodes: Node[], allEdges: Edge[], processedNodeIds: Set<string>): any {
-  if (!node || processedNodeIds.has(node.id)) {
-    return null;
-  }
-  processedNodeIds.add(node.id);
-
-  const outgoingEdges = allEdges.filter(edge => edge.source === node.id);
-  const nodeJson: any = {
-    id: `node-${node.id}`,
-    type: node.type,
-  };
-
-  if (node.type === 'promptAgent') {
-    nodeJson.tools = [];
-    const toolEdges = outgoingEdges.filter(edge => {
-      const targetNode = allNodes.find(n => n.id === edge.target);
-      return targetNode && targetNode.type === 'agentTool';
-    });
-
-    for (const edge of toolEdges) {
-      const toolNode = allNodes.find(n => n.id === edge.target);
-      if (toolNode) {
-        // Recursively build the tool node JSON, but don't add it to the main processed list yet
-        const toolJson = buildNodeJson(toolNode, allNodes, allEdges, new Set());
-        if (toolJson) {
-          nodeJson.tools.push(toolJson);
-          // Mark the tool node as processed so it's not added to the top level
-          processedNodeIds.add(toolNode.id);
-        }
-      }
-    }
-  }
-
-  // Find the primary outgoing edge that is NOT a tool connection for promptAgent
-  let primaryOutgoingEdge;
-  if (node.type === 'promptAgent') {
-    primaryOutgoingEdge = outgoingEdges.find(edge => {
-      const targetNode = allNodes.find(n => n.id === edge.target);
-      return targetNode && targetNode.type !== 'agentTool';
-    });
-  } else {
-    primaryOutgoingEdge = outgoingEdges[0];
-  }
-
-
-  if (primaryOutgoingEdge) {
-    const nextNode = allNodes.find(node => node.id === primaryOutgoingEdge.target);
-    if (nextNode) {
-      const nextNodeJson = buildNodeJson(nextNode, allNodes, allEdges, processedNodeIds);
-      if (nextNodeJson) {
-        nodeJson.next = nextNodeJson;
-        // Simplified event-based connection for top-level nodes
-        nodeJson.emits = `event-${primaryOutgoingEdge.id}`;
-        nextNodeJson.accepts = `event-${primaryOutgoingEdge.id}`;
-      }
-    }
-  }
-
-  // Remove label from the final JSON
-  if (node.data && 'label' in node.data) {
-    // keeping other data properties if they exist
-  }
-
-  return nodeJson;
-}
-
 export function compileWorkflow(nodes: Node[], edges: Edge[]): any {
   let settings = {};
   if (typeof window !== "undefined") {
@@ -98,43 +32,28 @@ export function compileWorkflow(nodes: Node[], edges: Edge[]): any {
     return { error: "No start node found" };
   }
 
-  const processedNodeIds = new Set<string>();
-  const allNodeJsons: any[] = [];
+  const allReachableNodes = new Set<Node>();
+  const queue: Node[] = [startNode];
+  const visitedNodeIds = new Set<string>([startNode.id]);
 
-  // First pass: handle promptAgent and its tools
-  nodes.forEach(node => {
-    if (node.type === 'promptAgent') {
-      const nodeJson = buildNodeJson(node, nodes, edges, processedNodeIds);
-      if (nodeJson) {
-        allNodeJsons.push(nodeJson);
+  while (queue.length > 0) {
+      const currentNode = queue.shift()!;
+      allReachableNodes.add(currentNode);
+
+      const outgoingEdges = edges.filter(edge => edge.source === currentNode.id);
+      for (const edge of outgoingEdges) {
+          const targetNode = nodes.find(n => n.id === edge.target);
+          if (targetNode && !visitedNodeIds.has(targetNode.id)) {
+              visitedNodeIds.add(targetNode.id);
+              queue.push(targetNode);
+          }
       }
-    }
-  });
+  }
+  
+  const allProcessedNodes = Array.from(allReachableNodes);
 
-  // Second pass: handle all other nodes that haven't been processed
-  nodes.forEach(node => {
-    if (!processedNodeIds.has(node.id)) {
-      const nodeJson = buildNodeJson(node, nodes, edges, processedNodeIds);
-      if (nodeJson) {
-        allNodeJsons.push(nodeJson);
-      }
-    }
-  });
-
-  // The final JSON should be a flat list of nodes, where tools are nested.
-  // We need to rebuild the structure from the startNode to get the correct order and nesting.
-  processedNodeIds.clear();
-  const finalJson = buildNodeJson(startNode, nodes, edges, processedNodeIds);
-
-  // After building the main path, we need to collect all nodes that were processed.
-  const allProcessedNodes = nodes.filter(n => processedNodeIds.has(n.id));
-
-  // Now, we create the flat list for the output, but the nesting logic is handled inside buildNodeJson
+  // Now, we create the flat list for the output
   const resultNodes = allProcessedNodes.map(node => {
-    // Re-running buildNodeJson without recursion, just to get the final structure for each node.
-    // This is not efficient and needs a better approach.
-    const tempProcessedIds = new Set<string>();
-    
     // We can't just call buildNodeJson again. We need a new function to format the output.
     const nodeJson: any = {
       id: `node-${node.id}`,
@@ -186,7 +105,14 @@ export function compileWorkflow(nodes: Node[], edges: Edge[]): any {
       nodeJson.data.prompt = node.data.prompt;
     }
 
-    if (node.type === 'decision') {
+    if (node.type === 'promptLLM' && node.data && node.data.promptPrefix) {
+      nodeJson.data.promptPrefix = node.data.promptPrefix;
+    }
+
+    if (node.type === 'decision' && node.data) {
+      if (node.data.question) {
+        nodeJson.data.question = node.data.question;
+      }
       const trueEdge = outgoingEdges.find(e => e.sourceHandle === 'true');
       const falseEdge = outgoingEdges.find(e => e.sourceHandle === 'false');
       const emits: { [key: string]: string } = {};
@@ -209,12 +135,17 @@ export function compileWorkflow(nodes: Node[], edges: Edge[]): any {
     
     const incomingEdges = edges.filter(e => e.target === node.id);
     if (incomingEdges.length > 0) {
-      const edge = incomingEdges.find(e => {
+      // This logic is getting complicated. Let's simplify.
+      // A node accepts an event from its incoming connection.
+      const relevantEdges = incomingEdges.filter(e => {
         const source = nodes.find(n => n.id === e.source);
         return !(source?.type === 'promptAgent' && nodeJson.type === 'agentTool');
-      });
-      if (edge) {
-        nodeJson.accepts = `event-${edge.id}`;
+      })
+
+      if (relevantEdges.length > 1) {
+        nodeJson.accepts = relevantEdges.map(e => `event-${e.id}`);
+      } else if (relevantEdges.length === 1) {
+        nodeJson.accepts = `event-${relevantEdges[0].id}`;
       }
     }
 
@@ -237,35 +168,6 @@ export function compileWorkflow(nodes: Node[], edges: Edge[]): any {
   });
 
   const finalNodes = resultNodes.filter(n => !toolNodeIds.has(n.id.replace('node-','')));
-  // Find the primary incoming edge for each node to set the 'accepts' property
-  finalNodes.forEach(nodeJson => {
-      const nodeId = nodeJson.id.replace('node-','');
-      const incomingEdge = edges.find(e => e.target === nodeId && nodes.find(n => n.id === e.source)?.type !== 'promptAgent' && nodes.find(n => n.id === e.target)?.type === 'agentTool');
-      const primaryIncomingEdge = edges.find(e => {
-        const sourceNode = nodes.find(n => n.id === e.source);
-        if (!sourceNode) return false;
-        // if the target is me, and the source is not a prompt agent sending me a tool connection
-        return e.target === nodeId && (sourceNode.type !== 'promptAgent' || nodes.find(n => n.id === e.target)?.type !== 'agentTool');
-      });
-
-      const incomingEdges = edges.filter(e => e.target === nodeId);
-      if (incomingEdges.length > 0) {
-        // This logic is getting complicated. Let's simplify.
-        // A node accepts an event from its incoming connection.
-        const edge = incomingEdges.find(e => {
-          const source = nodes.find(n => n.id === e.source);
-          return !(source?.type === 'promptAgent' && nodeJson.type === 'agentTool');
-        })
-        if (edge) {
-          nodeJson.accepts = `event-${edge.id}`;
-        }
-      }
-
-      if (nodeJson.type === 'start') {
-        delete nodeJson.accepts;
-      }
-  });
-
 
   return { nodes: finalNodes, settings };
 } 

@@ -230,17 +230,35 @@ All colors MUST be HSL.
 }
 
 .node-decision {
-  border-color: hsl(var(--node-decision));
-  background: hsl(var(--card));
-  transform: rotate(45deg);
-  width: 100px !important;
-  height: 100px !important;
-  min-width: 100px !important;
-  min-height: 100px !important;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  width: 200px;
+  height: 200px;
+}
+
+.glow-path {
+  filter: drop-shadow(0 0 5px hsl(var(--primary-glow)));
 }
 
 .node-decision .node-content {
-  transform: rotate(-45deg);
+  padding: 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.node-decision .node-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.node-decision .textarea {
+  min-height: 60px;
 }
 
 /* Handle Styles */

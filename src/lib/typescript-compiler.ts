@@ -1,5 +1,7 @@
 import { getLlmModelName } from "./llm-utils";
 import { WorkflowJson, WorkflowNodeJson } from "./workflow-compiler";
+import { createWorkflow, workflowEvent } from "@llamaindex/workflow-core";
+import { MessageContent } from "@llamaindex/core/llms";
 
 const toCamelCase = (str: string): string => {
   if (!str) return '';
@@ -312,79 +314,137 @@ workflow.handle([${startEventName}], async (ctx) => {
 });
 `);
     } else if (node.type === 'userInput') {
-        const incomingEvent = getEventName(node.accepts as string);
+        const incomingEvents = Array.isArray(node.accepts) ? node.accepts.map(getEventName) : [getEventName(node.accepts as string)];
         const outgoingEvent = getEventName(node.emits as string);
         const promptText = node.data.prompt || 'Please provide input:';
-        handlerLines.push(`
-workflow.handle([${incomingEvent}], async () => {
+        for (const event of incomingEvents) {
+          handlerLines.push(`
+workflow.handle([${event}], async () => {
     return need_input_for_${outgoingEvent}.with("${promptText}");
 });
 `);
-    } else if (node.type === 'promptAgent') {
-      const incomingEvent = getEventName(node.accepts as string);
-      const outgoingEvent = getEventName(node.emits as string);
-      
-      const toolNames = (node.data.tools || []).map((tool: any) => toCamelCase(tool.name));
-      const modelName = getLlmModelName(json.settings, { data: node.data });
-      const llmVarName = toCamelCase(modelName);
-      const systemPrompt = node.data.prompt;
+        }
+    } else if (node.type === "splitter") {
+        const outgoingEvent = getEventName(node.emits as string);
+        handlerLines.push(
+          `// Splitter node ${node.id} - fans out to multiple branches`,
+        );
+    } else if (node.type === "collector") {
+        // Collector nodes are implicitly handled by having multiple events
+        // trigger the same handler. The handler will receive an array of results.
+        handlerLines.push(`// Collector node ${node.id} - logic is in the handler`);
+    } else if (node.type === "promptAgent") {
+        const llmIdentifier = toCamelCase(getLlmModelName(json.settings, node));
+        const toolVars = (node.data.tools || []).map((tool: any) =>
+        toCamelCase(
+            tool.name || `search_index_${tool.id.replace(/-/g, "_")}`,
+        ),
+        );
+        const systemPrompt = node.data.prompt
+        ? `\`${node.data.prompt}\``
+        : "undefined";
+        const outgoingEvent = getEventName(node.emits as string);
+        const agentVar = toCamelCase(`${node.id}Agent`);
 
-      const agentProperties = [
-        `llm: ${llmVarName}`,
-        `tools: [${toolNames.join(", ")}]`,
-      ];
+        handlerLines.push(`
+const ${agentVar} = agent({
+    llm: ${llmIdentifier},
+    tools: [${toolVars.join(", ")}],
+    systemPrompt: ${systemPrompt},
+});`);
 
-      if (systemPrompt) {
-        agentProperties.push(`systemPrompt: ${JSON.stringify(systemPrompt)}`);
-      }
-      
-      handlerLines.push(`
-workflow.handle([${incomingEvent}], async (ctx) => {
-    const configuredAgent = agent({ 
-        ${agentProperties.join(",\n        ")} 
-    });
-    const result = await configuredAgent.run(ctx.data);
+        const incomingEvents = Array.isArray(node.accepts) ? node.accepts.map(getEventName) : [getEventName(node.accepts as string)];
+        for (const event of incomingEvents) {
+          handlerLines.push(`
+workflow.handle([${event}], async (ctx) => {
+    console.log("Executing node ${node.id}");
+    const result = await ${agentVar}.run(ctx.data);
     return ${outgoingEvent}.with(result.data.result);
-});
-`);
-    } else if (node.type === 'stop') {
-        const incomingEvent = getEventName(node.accepts as string);
-        handlerLines.push(`
-workflow.handle([${incomingEvent}], async (ctx) => {
-    return stopEvent.with(ctx.data);
-});
-`);
+});`);
+        }
+    } else if (node.type === "promptLLM") {
+        const llmIdentifier = toCamelCase(getLlmModelName(json.settings, node));
+        const inputVar = toCamelCase(node.id);
+        const promptPrefix = node.data.promptPrefix
+        ? `\`${node.data.promptPrefix}\\n\\n\${JSON.stringify(${inputVar})}\``
+        : `JSON.stringify(${inputVar})`;
+        const outgoingEvent = getEventName(node.emits as string);
+        
+        const incomingEvents = Array.isArray(node.accepts) ? node.accepts.map(getEventName) : [getEventName(node.accepts as string)];
+        for (const event of incomingEvents) {
+          handlerLines.push(`
+workflow.handle([${event}], async ( ${inputVar} ) => {
+    console.log("Executing node ${node.id}");
+    const response = await ${llmIdentifier}.chat({
+        messages: [{ role: "user", content: ${promptPrefix} }]
+    });
+    const content: MessageContent = response.message.content;
+    let textContent: string | null = null;
+    if (typeof content === 'string') {
+        textContent = content;
+    } else if (Array.isArray(content)) {
+        const textBlock = content.find(c => c.type === 'text');
+        if (textBlock && 'text' in textBlock) {
+            textContent = textBlock.text;
+        }
+    }
+    return ${outgoingEvent}.with(textContent);
+});`);
+        }
+    } else if (node.type === "stop") {
+      const incomingEvents = Array.isArray(node.accepts) ? node.accepts.map(getEventName) : [getEventName(node.accepts as string)];
+      for (const event of incomingEvents) {
+        handlerLines.push(
+          `workflow.handle([${event}], async (result) => {
+      console.log("Workflow finished with result:", result);
+      return stopEvent.with(result.data);
+  });`,
+        );
+      }
     } else if (node.type === 'decision') {
-        const trueEvent = (node.emits as { [key: string]: string })?.true;
-        const falseEvent = (node.emits as { [key: string]: string })?.false;
+        const trueEventName = getEventName((node.emits as { [key: string]: string })?.true);
+        const falseEventName = getEventName((node.emits as { [key: string]: string })?.false);
+        const question = node.data.question;
+        const llmVar = toCamelCase(getLlmModelName(json.settings, { data: node.data }));
+        
+        const incomingEvents = Array.isArray(node.accepts) ? node.accepts.map(getEventName) : [getEventName(node.accepts as string)];
+        for (const event of incomingEvents) {
+          handlerLines.push(`
+workflow.handle([${event}], async (ctx) => {
+    console.log("Evaluating question: ${question}");
+    const llm = ${llmVar};
+    const response = await llm.chat({
+        messages: [{ role: "user", content: \`Given the following information, answer the question with only "true" or "false".
 
-        let trueTarget, falseTarget;
+Information:
+\${JSON.stringify(ctx.data)}
 
-        if (trueEvent) {
-            trueTarget = json.nodes.find(n => n.accepts === trueEvent);
-        }
-        if (falseEvent) {
-            falseTarget = json.nodes.find(n => n.accepts === falseEvent);
-        }
-
-        handlerLines.push(`
-workflow.handle([${getEventName(node.accepts as string)}], async (ctx) => {
-    console.log("Executing condition:", \`${node.data.condition}\`);
-    const llm = ${toCamelCase(getLlmModelName(json.settings, node))};
-    const response = await llm.complete({
-        prompt: \`You are a decision-making AI. Based on the following context, is the condition true or false? Condition: ${node.data.condition}. Context: \${JSON.stringify(ctx.data)}\`,
+Question: ${question}\`}]
     });
 
-    const conditionResult = response.text.toLowerCase().includes('true');
+    const content: MessageContent = response.message.content;
+    let textContent: string | null = null;
+    if (typeof content === 'string') {
+        textContent = content;
+    } else if (Array.isArray(content)) {
+        const textBlock = content.find(c => c.type === 'text');
+        if (textBlock && 'text' in textBlock) {
+            textContent = textBlock.text;
+        }
+    }
+    const result = textContent?.toLowerCase().trim();
+    const conditionResult = result === 'true';
+
     console.log("Condition result:", conditionResult);
 
     if (conditionResult) {
-        ${trueTarget ? `await workflow.emit("${trueEvent}", { ...ctx.data });` : ''}
+        return ${trueEventName}.with(ctx.data);
     } else {
-        ${falseTarget ? `await workflow.emit("${falseEvent}", { ...ctx.data });` : ''}
+        return ${falseEventName}.with(ctx.data);
     }
 });
 `);
+        }
     }
   }
   return handlerLines.join("\n");

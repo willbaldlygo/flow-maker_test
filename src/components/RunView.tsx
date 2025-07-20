@@ -387,13 +387,16 @@ const RunViewInner = () => {
             return;
           }
 
+          // Pass the input along to the next node
+          setWorkflowState((prevState) => ({ ...prevState, [nodeId]: input }));
+
           const thinkingMessageId = Math.random().toString();
           setMessages((prev) => [
             ...prev,
             {
               id: thinkingMessageId,
               role: 'assistant',
-              content: `Thinking with ${node.data.label}...`,
+              content: `Evaluating: ${node.data.question}...`,
             },
           ]);
 
@@ -401,19 +404,7 @@ const RunViewInner = () => {
             method: 'POST',
             body: JSON.stringify({
               input: input,
-              node: {
-                ...node,
-                data: {
-                  ...node.data,
-                  prompt: `Given the input, which of the following paths should be taken? The choices are: ${Object.keys(
-                    node.data.choices,
-                  ).join(', ')}. Please respond with only the name of the path.
-
-Input:
-${input}
-`,
-                },
-              },
+              node: node,
               settings: loadSavedSettings(),
             }),
             headers: {
@@ -427,8 +418,7 @@ ${input}
             );
           }
 
-          const { output: llmOutput } = await llmResponse.json();
-          const decision = getMessageContent(llmOutput).trim();
+          const { output: decision } = await llmResponse.json();
 
           setMessages((prev) =>
             prev.map((msg) =>
@@ -439,20 +429,15 @@ ${input}
           );
 
           // Find the output handle that matches the decision
-          const choiceHandleId = (node.data.choices as any)[decision];
-          if (choiceHandleId) {
-            const nextDecisionNode = workflow.nodes.find(
-              (n) => n.accepts === choiceHandleId,
-            );
-            if (nextDecisionNode) {
-              nextNodeId = nextDecisionNode.id.replace('node-', '');
-            } else {
-              setExecutionStatus('finished');
-            }
+          const handleId = decision ? 'true' : 'false';
+          const nextEdge = workflow.nodes.find(
+            (n) => n.accepts === (node.emits as any)[handleId],
+          );
+          
+          if (nextEdge) {
+            nextNodeId = nextEdge.id.replace('node-', '');
           } else {
-            setError(`No path found for decision: ${decision}`);
-            setExecutionStatus('error');
-            return;
+            setExecutionStatus('finished');
           }
           break;
         }

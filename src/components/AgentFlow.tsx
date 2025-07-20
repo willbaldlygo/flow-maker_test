@@ -1,5 +1,5 @@
 import '@xyflow/react/dist/style.css';
-import { useCallback, useRef, useState, useEffect, Dispatch, SetStateAction } from 'react';
+import { useCallback, useRef, useState, useEffect, Dispatch, SetStateAction, useMemo } from 'react';
 import {
   ReactFlow,
   Background,
@@ -16,6 +16,7 @@ import {
   ReactFlowProvider,
   OnNodesChange,
   OnEdgesChange,
+  NodeProps,
 } from '@xyflow/react';
 
 // Import custom nodes
@@ -106,11 +107,22 @@ const AgentFlowInner = ({ nodes, edges, onNodesChange, onEdgesChange, setNodes, 
 
   const onConnect = useCallback(
     (params: Connection) => {
+      const sourceNode = nodes.find(node => node.id === params.source);
+      let label;
+      if (sourceNode?.type === 'decision') {
+        if (params.sourceHandle === 'true') {
+          label = 'True';
+        } else if (params.sourceHandle === 'false') {
+          label = 'False';
+        }
+      }
+
       const newEdge: Edge = {
         ...params,
         id: `edge-${params.source}-${params.target}`,
         type: 'default',
         animated: false,
+        label,
         style: {
           strokeWidth: 2,
           stroke: 'hsl(var(--muted-foreground))'
@@ -121,7 +133,7 @@ const AgentFlowInner = ({ nodes, edges, onNodesChange, onEdgesChange, setNodes, 
       };
       setEdges((eds) => addEdge(newEdge, eds));
     },
-    [setEdges]
+    [setEdges, nodes]
   );
 
   const onDragOver = useCallback((event: React.DragEvent) => {
