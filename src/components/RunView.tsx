@@ -26,6 +26,7 @@ import {
   ChatHandler,
   Message as ChatUIMessage,
 } from '@llamaindex/chat-ui';
+import { LoaderCircle } from 'lucide-react';
 
 // Import custom nodes (read-only versions)
 import StartNode from './nodes/StartNode';
@@ -138,8 +139,7 @@ const RunViewInner = () => {
     messages: messages as ChatUIMessage[],
     input,
     setInput,
-    isLoading:
-      executionStatus === 'running' || executionStatus === 'finished',
+    isLoading: executionStatus === 'running',
     append: async (message) => {
       const newMessage = {
         ...message,
@@ -596,7 +596,13 @@ ${input}
                           : 'Waiting for agent...'
                       }
                     />
-                    <ChatInput.Submit />
+                    {chatHandler.isLoading ? (
+                      <div className="p-2">
+                        <LoaderCircle className="spinner" />
+                      </div>
+                    ) : (
+                      <ChatInput.Submit />
+                    )}
                   </ChatInput.Form>
                 </ChatInput>
               </ChatSection>
