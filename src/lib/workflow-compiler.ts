@@ -186,22 +186,38 @@ export function compileWorkflow(nodes: Node[], edges: Edge[]): any {
       nodeJson.data.prompt = node.data.prompt;
     }
 
-    const primaryEdge = node.type === 'promptAgent'
-      ? outgoingEdges.find(edge => nodes.find(n => n.id === edge.target)?.type !== 'agentTool')
-      : outgoingEdges[0];
+    if (node.type === 'decision') {
+      const trueEdge = outgoingEdges.find(e => e.sourceHandle === 'true');
+      const falseEdge = outgoingEdges.find(e => e.sourceHandle === 'false');
+      const emits: { [key: string]: string } = {};
+      if (trueEdge) {
+        emits['true'] = `event-${trueEdge.id}`;
+      }
+      if (falseEdge) {
+        emits['false'] = `event-${falseEdge.id}`;
+      }
+      nodeJson.emits = emits;
+    } else {
+      const primaryEdge = node.type === 'promptAgent'
+        ? outgoingEdges.find(edge => nodes.find(n => n.id === edge.target)?.type !== 'agentTool')
+        : outgoingEdges[0];
 
-    if (primaryEdge) {
-      nodeJson.emits = `event-${primaryEdge.id}`;
-      const targetNode = nodes.find(n => n.id === primaryEdge.target);
-      if (targetNode) {
-        // Just need to find the edge that connects to this node
-        const incomingEdge = edges.find(e => e.target === node.id);
-        if(incomingEdge) {
-          nodeJson.accepts = `event-${incomingEdge.id}`;
-        }
+      if (primaryEdge) {
+        nodeJson.emits = `event-${primaryEdge.id}`;
       }
     }
-    // Special handling for start node
+    
+    const incomingEdges = edges.filter(e => e.target === node.id);
+    if (incomingEdges.length > 0) {
+      const edge = incomingEdges.find(e => {
+        const source = nodes.find(n => n.id === e.source);
+        return !(source?.type === 'promptAgent' && nodeJson.type === 'agentTool');
+      });
+      if (edge) {
+        nodeJson.accepts = `event-${edge.id}`;
+      }
+    }
+
     if (node.type === 'start') {
         delete nodeJson.accepts;
     }

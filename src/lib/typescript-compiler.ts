@@ -354,6 +354,37 @@ workflow.handle([${incomingEvent}], async (ctx) => {
     return stopEvent.with(ctx.data);
 });
 `);
+    } else if (node.type === 'decision') {
+        const trueEvent = (node.emits as { [key: string]: string })?.true;
+        const falseEvent = (node.emits as { [key: string]: string })?.false;
+
+        let trueTarget, falseTarget;
+
+        if (trueEvent) {
+            trueTarget = json.nodes.find(n => n.accepts === trueEvent);
+        }
+        if (falseEvent) {
+            falseTarget = json.nodes.find(n => n.accepts === falseEvent);
+        }
+
+        handlerLines.push(`
+workflow.handle([${getEventName(node.accepts as string)}], async (ctx) => {
+    console.log("Executing condition:", \`${node.data.condition}\`);
+    const llm = ${toCamelCase(getLlmModelName(json.settings, node))};
+    const response = await llm.complete({
+        prompt: \`You are a decision-making AI. Based on the following context, is the condition true or false? Condition: ${node.data.condition}. Context: \${JSON.stringify(ctx.data)}\`,
+    });
+
+    const conditionResult = response.text.toLowerCase().includes('true');
+    console.log("Condition result:", conditionResult);
+
+    if (conditionResult) {
+        ${trueTarget ? `await workflow.emit("${trueEvent}", { ...ctx.data });` : ''}
+    } else {
+        ${falseTarget ? `await workflow.emit("${falseEvent}", { ...ctx.data });` : ''}
+    }
+});
+`);
     }
   }
   return handlerLines.join("\n");

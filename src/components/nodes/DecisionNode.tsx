@@ -19,21 +19,43 @@ const DecisionNode = memo(({ data, selected }: DecisionNodeProps) => {
       </div>
       <Handle
         type="target"
-        position={Position.Top}
+        position={Position.Left}
+        id="input"
         style={{
           width: '16px',
           height: '16px',
+          left: '0%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
           border: '3px solid hsl(var(--primary))',
           backgroundColor: 'hsl(var(--card))',
         }}
       />
       <Handle
         type="source"
-        position={Position.Bottom}
+        position={Position.Right}
+        id="true"
         style={{
-          width: '16px',
-          height: '16px',
-          border: '3px solid hsl(var(--primary))',
+          width: '12px',
+          height: '12px',
+          right: '0%',
+          top: '50%',
+          transform: 'translate(50%, -50%)',
+          border: '2px solid hsl(var(--primary))',
+          backgroundColor: 'hsl(var(--primary))',
+        }}
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="false"
+        style={{
+          width: '12px',
+          height: '12px',
+          left: '50%',
+          bottom: '0%',
+          transform: 'translate(-50%, 50%)',
+          border: '2px solid hsl(var(--primary))',
           backgroundColor: 'hsl(var(--primary))',
         }}
       />
