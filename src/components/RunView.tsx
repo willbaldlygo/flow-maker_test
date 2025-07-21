@@ -180,7 +180,10 @@ const RunViewInner = () => {
       switch (node.type) {
         case 'start': {
           const connectedNode = workflow.nodes.find(
-            (n) => n.accepts === node.emits,
+            (n) =>
+              Array.isArray(n.accepts)
+                ? n.accepts.includes(node.emits as string)
+                : n.accepts === node.emits,
           );
           if (connectedNode) {
             nextNodeId = connectedNode.id.replace('node-', '');
@@ -266,7 +269,10 @@ const RunViewInner = () => {
           );
 
           const nextNode = workflow.nodes.find(
-            (n) => n.accepts === node.emits,
+            (n) =>
+              Array.isArray(n.accepts)
+                ? n.accepts.includes(node.emits as string)
+                : n.accepts === node.emits,
           );
           if (nextNode) {
             nextNodeId = nextNode.id.replace('node-', '');
@@ -314,7 +320,10 @@ const RunViewInner = () => {
           }));
 
           const nextAgentNode = workflow.nodes.find(
-            (n) => n.accepts === node.emits,
+            (n) =>
+              Array.isArray(n.accepts)
+                ? n.accepts.includes(node.emits as string)
+                : n.accepts === node.emits,
           );
           if (nextAgentNode) {
             nextNodeId = nextAgentNode.id.replace('node-', '');
@@ -367,7 +376,10 @@ const RunViewInner = () => {
           }
 
           const nextCollectorNode = workflow.nodes.find(
-            (n) => n.accepts === node.emits,
+            (n) =>
+              Array.isArray(n.accepts)
+                ? n.accepts.includes(node.emits as string)
+                : n.accepts === node.emits,
           );
           if (nextCollectorNode) {
             nextNodeId = nextCollectorNode.id.replace('node-', '');
@@ -433,8 +445,12 @@ const RunViewInner = () => {
 
           // Find the output handle that matches the decision
           const handleId = decision ? 'true' : 'false';
+          const event = (node.emits as any)[handleId];
           const nextEdge = workflow.nodes.find(
-            (n) => n.accepts === (node.emits as any)[handleId],
+            (n) =>
+              Array.isArray(n.accepts)
+                ? n.accepts.includes(event)
+                : n.accepts === event,
           );
           
           if (nextEdge) {
@@ -513,7 +529,10 @@ const RunViewInner = () => {
     setExecutionStatus('running');
 
     const nextNode = compiledWorkflow.nodes.find(
-      (n) => n.accepts === userInputNode.emits,
+      (n) =>
+        Array.isArray(n.accepts)
+          ? n.accepts.includes(userInputNode.emits as string)
+          : n.accepts === userInputNode.emits,
     );
 
     if (nextNode) {

@@ -76,14 +76,27 @@ const generateImports = (json: WorkflowJson): string => {
     if (hasPromptAgent) {
       imports.add('import { agent } from "@llamaindex/workflow";');
     }
-    const llmProvider = json.settings?.defaultLLM || "gpt-4o";
-    if (llmProvider.startsWith("gpt")) {
-      imports.add('import { OpenAI } from "@llamaindex/openai";');
-    } else if (llmProvider.startsWith("claude")) {
-      imports.add('import { Anthropic } from "@llamaindex/anthropic";');
-    } else if (llmProvider.startsWith("gemini")) {
-      imports.add('import { Gemini } from "@llamaindex/google";');
+    imports.add('import { MessageContent } from "@llamaindex/core/llms";');
+    const llmProviders = new Set<string>();
+    json.nodes.forEach(node => {
+      if (node.type === "promptAgent" || node.type === "promptLLM" || node.type === 'decision') {
+        llmProviders.add(node.data.llm || json.settings?.defaultLLM || "gpt-4o");
+      }
+    });
+
+    if (llmProviders.size === 0 && json.settings?.defaultLLM) {
+      llmProviders.add(json.settings.defaultLLM);
     }
+    
+    llmProviders.forEach(llmProvider => {
+      if (llmProvider.startsWith("gpt")) {
+        imports.add('import { OpenAI } from "@llamaindex/openai";');
+      } else if (llmProvider.startsWith("claude")) {
+        imports.add('import { Anthropic } from "@llamaindex/anthropic";');
+      } else if (llmProvider.startsWith("gemini")) {
+        imports.add('import { Gemini } from "@llamaindex/google";');
+      }
+    });
   }
 
   if (hasTools) {
@@ -253,8 +266,8 @@ const ${functionName} = async ( { query } : { query: string } ) => {
 };
 
 const ${camelCaseName} = tool(${functionName}, {
-  name: '${camelCaseName}',
-  description: '${toolDescription}',
+  name: ${JSON.stringify(camelCaseName)},
+  description: ${JSON.stringify(toolDescription)},
   parameters: z.object({
     query: z.string({
       description: 'The query to search the index',
@@ -373,10 +386,10 @@ workflow.handle([${event}], async (ctx) => {
         const incomingEvents = Array.isArray(node.accepts) ? node.accepts.map(getEventName) : [getEventName(node.accepts as string)];
         for (const event of incomingEvents) {
           handlerLines.push(`
-workflow.handle([${event}], async ( ${inputVar} ) => {
+workflow.handle([${event}], async (event) => {
     console.log("Executing node ${node.id}");
     const response = await ${llmIdentifier}.chat({
-        messages: [{ role: "user", content: ${promptPrefix} }]
+        messages: [{ role: "user", content: \`${node.data.promptPrefix}\\n\\n\${JSON.stringify(event.data)}\` }]
     });
     const content: MessageContent = response.message.content;
     let textContent: string | null = null;
