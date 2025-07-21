@@ -26,8 +26,8 @@ import UserInputNode from './nodes/UserInputNode';
 import PromptLLMNode from './nodes/PromptLLMNode';
 import PromptAgentNode from './nodes/PromptAgentNode';
 import AgentToolNode from './nodes/AgentToolNode';
-import SplitterNode from './nodes/SplitterNode';
-import CollectorNode from './nodes/CollectorNode';
+// import SplitterNode from './nodes/SplitterNode';
+// import CollectorNode from './nodes/CollectorNode';
 import DecisionNode from './nodes/DecisionNode';
 import { Save, Check } from 'lucide-react';
 import AgentBuilderSidebar from './AgentBuilderSidebar';
@@ -41,8 +41,8 @@ const nodeTypes = {
   promptLLM: PromptLLMNode,
   promptAgent: PromptAgentNode,
   agentTool: AgentToolNode,
-  splitter: SplitterNode,
-  collector: CollectorNode,
+  // splitter: SplitterNode,
+  // collector: CollectorNode,
   decision: DecisionNode,
 };
 

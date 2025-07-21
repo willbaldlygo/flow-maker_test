@@ -66,15 +66,16 @@ const nodeTemplates = [
     { type: 'promptAgent', label: 'Prompt Agent', description: 'Configure and prompt AI agents', icon: Bot },
     { type: 'agentTool', label: 'Agent Tool', description: 'Tools and functions for agents', icon: Wrench },
     { type: 'decision', label: 'Decision', description: 'Conditional branching logic', icon: GitBranch },
-    { type: 'splitter', label: 'Splitter', description: 'Split flow into multiple paths', icon: Split },
-    { type: 'collector', label: 'Collector', description: 'Merge multiple flows together', icon: Merge },
+    // { type: 'splitter', label: 'Splitter', description: 'Split flow into multiple paths', icon: Split },
+    // { type: 'collector', label: 'Collector', description: 'Merge multiple flows together', icon: Merge },
   ];
 
 const AgentBuilderSidebar = ({ onAddNode, onReset, settings, onUpdateSettings }: AgentBuilderSidebarProps) => {
 
   return (
     <aside className="w-80 bg-card border-r border-border p-4 flex flex-col space-y-4">
-      <h2 className="text-xl font-semibold">Agent Builder</h2>
+      <h2 className="text-xl font-semibold">Build an Agent</h2>
+      <p className='text-sm text-muted-foreground'>Drag and drop elements, click and drag to connect.</p>
       
       <div className="flex-grow overflow-y-auto">
         <Accordion type="multiple" defaultValue={['nodes', 'settings']} className="w-full">

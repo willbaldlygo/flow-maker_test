@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Llama Agent Creator",
+  title: "FlowMaker",
   description: "A visual agent builder for LlamaIndex",
   icons: {
     icon: "/favicon.ico",

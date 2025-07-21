@@ -12,8 +12,9 @@ const RunSidebar = ({ onRun, onRestart, status, error }: RunSidebarProps) => {
   return (
     <div className="w-80 h-full flex flex-col bg-card border-r border-border p-4">
       <div className="space-y-4 flex-shrink-0">
-        <div className="flex items-center space-x-2">
+        <div className="items-center">
           <h2 className="text-lg font-semibold">Run Mode</h2>
+          <p className='text-sm text-muted-foreground'>Run your agent interactively.</p>
         </div>
         <Button
           onClick={onRun}

@@ -1,4 +1,4 @@
-# Llama Agent Creator
+# Flow Maker, a visual agent builder for LlamaIndex
 
 This is a tool for visually creating and exporting agentic workflows powered by LlamaIndex. It provides a drag-and-drop interface to build complex workflows, run them interactively, and then compile them into standalone TypeScript code.
 
