@@ -1,6 +1,6 @@
 import { getLlmModelName } from "./llm-utils";
 import { WorkflowJson, WorkflowNodeJson } from "./workflow-compiler";
-import { createWorkflow, workflowEvent } from "@llamaindex/workflow-core";
+import { createWorkflow, workflowEvent, or } from "@llamaindex/workflow-core";
 import { MessageContent } from "@llamaindex/core/llms";
 
 const toCamelCase = (str: string): string => {
@@ -34,7 +34,7 @@ const LlamaIndexTemplate = (
   handlers: string,
   execution: string,
 ) => `
-import { createWorkflow, workflowEvent } from "@llamaindex/workflow-core";
+import { createWorkflow, workflowEvent, or } from "@llamaindex/workflow-core";
 ${imports}
 
 ${llmInit}
@@ -330,15 +330,13 @@ workflow.handle([${startEventName}], async (ctx) => {
         const incomingEvents = Array.isArray(node.accepts) ? node.accepts.map(getEventName) : [getEventName(node.accepts as string)];
         const outgoingEvent = getEventName(node.emits as string);
         const promptText = node.data.prompt || 'Please provide input:';
-        for (const event of incomingEvents) {
-          handlerLines.push(`
-workflow.handle([${event}], async () => {
+        const eventConnector = incomingEvents.length > 1 ? `[or(${incomingEvents.join(", ")})]` : `[${incomingEvents[0]}]`;
+        handlerLines.push(`
+workflow.handle(${eventConnector}, async () => {
     return need_input_for_${outgoingEvent}.with("${promptText}");
 });
 `);
-        }
     } else if (node.type === "splitter") {
-        const outgoingEvent = getEventName(node.emits as string);
         handlerLines.push(
           `// Splitter node ${node.id} - fans out to multiple branches`,
         );
@@ -367,14 +365,13 @@ const ${agentVar} = agent({
 });`);
 
         const incomingEvents = Array.isArray(node.accepts) ? node.accepts.map(getEventName) : [getEventName(node.accepts as string)];
-        for (const event of incomingEvents) {
-          handlerLines.push(`
-workflow.handle([${event}], async (ctx) => {
+        const eventConnector = incomingEvents.length > 1 ? `[or(${incomingEvents.join(", ")})]` : `[${incomingEvents[0]}]`;
+        handlerLines.push(`
+workflow.handle(${eventConnector}, async (ctx) => {
     console.log("Executing node ${node.id}");
     const result = await ${agentVar}.run(ctx.data);
     return ${outgoingEvent}.with(result.data.result);
 });`);
-        }
     } else if (node.type === "promptLLM") {
         const llmIdentifier = toCamelCase(getLlmModelName(json.settings, node));
         const inputVar = toCamelCase(node.id);
@@ -384,9 +381,9 @@ workflow.handle([${event}], async (ctx) => {
         const outgoingEvent = getEventName(node.emits as string);
         
         const incomingEvents = Array.isArray(node.accepts) ? node.accepts.map(getEventName) : [getEventName(node.accepts as string)];
-        for (const event of incomingEvents) {
-          handlerLines.push(`
-workflow.handle([${event}], async (event) => {
+        const eventConnector = incomingEvents.length > 1 ? `[or(${incomingEvents.join(", ")})]` : `[${incomingEvents[0]}]`;
+        handlerLines.push(`
+workflow.handle(${eventConnector}, async (event) => {
     console.log("Executing node ${node.id}");
     const response = await ${llmIdentifier}.chat({
         messages: [{ role: "user", content: \`${node.data.promptPrefix}\\n\\n\${JSON.stringify(event.data)}\` }]
@@ -403,17 +400,15 @@ workflow.handle([${event}], async (event) => {
     }
     return ${outgoingEvent}.with(textContent);
 });`);
-        }
     } else if (node.type === "stop") {
       const incomingEvents = Array.isArray(node.accepts) ? node.accepts.map(getEventName) : [getEventName(node.accepts as string)];
-      for (const event of incomingEvents) {
-        handlerLines.push(
-          `workflow.handle([${event}], async (result) => {
+      const eventConnector = incomingEvents.length > 1 ? `[or(${incomingEvents.join(", ")})]` : `[${incomingEvents[0]}]`;
+      handlerLines.push(
+          `workflow.handle(${eventConnector}, async (result) => {
       console.log("Workflow finished with result:", result);
       return stopEvent.with(result.data);
   });`,
         );
-      }
     } else if (node.type === 'decision') {
         const trueEventName = getEventName((node.emits as { [key: string]: string })?.true);
         const falseEventName = getEventName((node.emits as { [key: string]: string })?.false);
@@ -421,9 +416,9 @@ workflow.handle([${event}], async (event) => {
         const llmVar = toCamelCase(getLlmModelName(json.settings, { data: node.data }));
         
         const incomingEvents = Array.isArray(node.accepts) ? node.accepts.map(getEventName) : [getEventName(node.accepts as string)];
-        for (const event of incomingEvents) {
-          handlerLines.push(`
-workflow.handle([${event}], async (ctx) => {
+        const eventConnector = incomingEvents.length > 1 ? `[or(${incomingEvents.join(", ")})]` : `[${incomingEvents[0]}]`;
+        handlerLines.push(`
+workflow.handle(${eventConnector}, async (ctx) => {
     console.log("Evaluating question: ${question}");
     const llm = ${llmVar};
     const response = await llm.chat({
@@ -457,7 +452,6 @@ Question: ${question}\`}]
     }
 });
 `);
-        }
     }
   }
   return handlerLines.join("\n");

@@ -16,7 +16,7 @@
     "@llamaindex/cloud": "^4.0.24",
     "@llamaindex/google": "^0.3.14",
     "@llamaindex/openai": "^0.4.9",
-    "@llamaindex/workflow-core": "^1.1.0",
+    "@llamaindex/workflow-core": "^1.2.0",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
     "@radix-ui/react-aspect-ratio": "^1.1.0",
