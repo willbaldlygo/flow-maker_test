@@ -4,6 +4,8 @@ This is a tool for visually creating and exporting agentic workflows powered by 
 
 It's open sourced under the MIT license, so you can run it locally and modify it to add features (there are a lot of obvious things to add!).
 
+![Flow Maker](./public/screenshot.png)
+
 ## ✨ Features
 
 -   **Visual Editor**: Use a drag-and-drop canvas powered by `@xyflow/react` to design your agent's logic.
