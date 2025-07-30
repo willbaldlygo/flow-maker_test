@@ -16,7 +16,7 @@ export function getLlmModelName(settings: any, nodeData: any = {}): string {
   } else if (llmProvider.startsWith("claude")) {
     return "claude-sonnet-4-20250514";
   } else if (llmProvider.startsWith("gemini")) {
-    return "gemini-pro";
+    return "gemini-2.5-pro";
   } else {
     // Fallback to a default model if the provider is unknown
     return "gpt-4.1-mini";
