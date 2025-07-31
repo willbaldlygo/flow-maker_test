@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
-    const authorization = req.headers.get('authorization');
-    if (!authorization) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // MODIFICATION: Use the environment variable directly
+    const llamaCloudApiKey = process.env.LLAMACLOUD_API_KEY;
+
+    if (!llamaCloudApiKey) {
+        return NextResponse.json({ error: 'LlamaCloud API key not configured on the server.' }, { status: 401 });
     }
 
     try {
@@ -11,7 +13,8 @@ export async function GET(req: NextRequest) {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
-                'Authorization': authorization,
+                // MODIFICATION: Use the server-side key
+                'Authorization': `Bearer ${llamaCloudApiKey}`,
             },
         });
 
@@ -25,4 +28,4 @@ export async function GET(req: NextRequest) {
     } catch (error) {
         return NextResponse.json({ error: (error as Error).message }, { status: 500 });
     }
-} 
+}
