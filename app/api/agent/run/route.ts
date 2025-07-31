@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { LLM, tool, OpenAI, Anthropic, Gemini } from 'llamaindex';
 import { agent } from '@llamaindex/workflow';
 import { z } from 'zod';
-// The 'getLlm' import is no longer needed as we will construct the LLM object directly.
 
+// This helper function remains the same.
 const toCamelCase = (str: string): string => {
   if (!str) return '';
   const words = str.replace(/[^a-zA-Z0-9_]+/g, ' ').split(/[_\s]+/);
