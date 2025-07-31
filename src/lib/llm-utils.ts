@@ -4,7 +4,7 @@ import { Gemini, GEMINI_MODEL } from "@llamaindex/google";
 import { LLM } from "llamaindex";
 
 export function getLlmModelName(settings: any, nodeData: any = {}): string {
-  const llmProvider = nodeData?.data?.llm || settings?.defaultLLM || "gpt-4o";
+  const llmProvider = nodeData?.data?.llm || settings?.defaultLLM || "gemini-2.5-pro";
   const model = nodeData?.data?.model;
 
   if (model) {
