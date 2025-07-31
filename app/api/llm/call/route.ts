@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getLlm } from "@/lib/llm-utils";
 import { MessageContent, LLM, OpenAI, Anthropic, Gemini } from "llamaindex";
 
 // This function is a modified version of getLlm that forces the use of environment variables
