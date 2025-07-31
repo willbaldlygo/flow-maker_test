@@ -39,90 +39,10 @@ const AgentBuilderSettings = memo(({ settings, onUpdateSettings }: AgentBuilderS
     google: false
   });
 
-  const updateSetting = (key: keyof SettingsData, value: any) => {
-    onUpdateSettings({
-      ...settings,
-      [key]: value
-    });
-  };
-
-  const updateApiKey = (provider: keyof SettingsData['apiKeys'], value: string) => {
-    onUpdateSettings({
-      ...settings,
-      apiKeys: {
-        ...settings.apiKeys,
-        [provider]: value
-      }
-    });
-  };
-
-  const toggleApiKeyVisibility = (key: keyof typeof showApiKeys) => {
-    setShowApiKeys(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-  };
-
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Get the current API key based on selected LLM
-  const getCurrentApiKey = () => {
-    switch (settings.defaultLLM) {
-      case 'gpt-4o':
-        return settings.apiKeys.openai;
-      case 'claude-sonnet':
-        return settings.apiKeys.anthropic;
-      case 'gemini-2.5-pro':
-        return settings.apiKeys.google;
-      default:
-        return '';
-    }
-  };
-
-  // Update the current API key based on selected LLM
-  const updateCurrentApiKey = (value: string) => {
-    switch (settings.defaultLLM) {
-      case 'gpt-4o':
-        updateApiKey('openai', value);
-        break;
-      case 'claude-sonnet':
-        updateApiKey('anthropic', value);
-        break;
-      case 'gemini-2.5-pro':
-        updateApiKey('google', value);
-        break;
-    }
-  };
-
-  // Get the appropriate placeholder for the current LLM
-  const getApiKeyPlaceholder = () => {
-    switch (settings.defaultLLM) {
-      case 'gpt-4o':
-        return 'sk-...';
-      case 'claude-sonnet':
-        return 'sk-ant-...';
-      case 'gemini-2.5-pro':
-        return 'AI...';
-      default:
-        return 'Enter API key';
-    }
-  };
-
-  // Get the provider name for the current LLM
-  const getProviderName = () => {
-    switch (settings.defaultLLM) {
-      case 'gpt-4o':
-        return 'OpenAI';
-      case 'claude-sonnet':
-        return 'Anthropic';
-      case 'gemini-2.5-pro':
-        return 'Google';
-      default:
-        return 'API';
-    }
-  };
 
   if (!isClient) {
     return null;
@@ -130,7 +50,11 @@ const AgentBuilderSettings = memo(({ settings, onUpdateSettings }: AgentBuilderS
 
   return (
     <Card className="p-3 space-y-4">
-      {/* LlamaCloud API Key */}
+        <div className="text-sm text-muted-foreground">
+            API keys have been configured on the server. No action is needed here.
+        </div>
+      {/* // The following UI elements have been removed to use server-side environment variables instead.
+
       <div className="space-y-2">
         <Label htmlFor="llamacloud-key" className="text-xs font-medium">
           LlamaCloud API Key
@@ -159,7 +83,6 @@ const AgentBuilderSettings = memo(({ settings, onUpdateSettings }: AgentBuilderS
         </div>
       </div>
 
-      {/* Default LLM Selection */}
       <div className="space-y-2">
         <Label className="text-xs font-medium">Default LLM</Label>
         <Select value={settings.defaultLLM} onValueChange={(value) => updateSetting('defaultLLM', value)}>
@@ -174,7 +97,6 @@ const AgentBuilderSettings = memo(({ settings, onUpdateSettings }: AgentBuilderS
         </Select>
       </div>
 
-      {/* Dynamic API Key for Selected LLM */}
       <div className="space-y-2">
         <Label htmlFor="llm-api-key" className="text-xs font-medium">
           {getProviderName()} API Key
@@ -201,7 +123,9 @@ const AgentBuilderSettings = memo(({ settings, onUpdateSettings }: AgentBuilderS
             )}
           </button>
         </div>
-      </div>
+      </div> 
+      
+      */}
     </Card>
   );
 });
