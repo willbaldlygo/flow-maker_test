@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getLlm } from "@/lib/llm-utils";
-import { MessageContent } from "@llamaindex/core/llms";
-import { OpenAI } from "@llamaindex/openai";
-import { Anthropic } from "@llamaindex/anthropic";
-import { Gemini } from "@llamaindex/google";
-import { LLM } from "llamaindex";
+import { MessageContent, LLM, OpenAI, Anthropic, Gemini } from "llamaindex";
 
 // This function is a modified version of getLlm that forces the use of environment variables
 const getLlmFromEnv = (settings: any, nodeData: any = {}) => {
   const llmProvider = nodeData?.data?.llm || settings?.defaultLLM || "gpt-4o";
   let llm: LLM;
 
-  const model = nodeData?.data?.model || (llmProvider.startsWith("gpt") ? "gpt-4.1-mini" : llmProvider.startsWith("claude") ? "claude-sonnet-4-20250514" : "gemini-2.5-pro");
+  // Determine the model name based on the provider
+  const model = nodeData?.data?.model || (llmProvider.startsWith("gpt") ? "gpt-4.1-mini" : llmProvider.startsWith("claude") ? "claude-sonnet-4-20250514" : "gemini-1.5-pro-latest");
   const temperature = nodeData?.data?.temperature ?? 0.2;
 
   if (llmProvider.startsWith("gpt")) {
@@ -21,7 +18,9 @@ const getLlmFromEnv = (settings: any, nodeData: any = {}) => {
   } else if (llmProvider.startsWith("gemini")) {
     llm = new Gemini({ model, temperature, apiKey: process.env.GOOGLE_API_KEY });
   } else {
-    throw new Error(`Unsupported LLM provider: ${llmProvider}`);
+    // Fallback to a default if the provider is unknown for some reason
+    console.warn(`Unsupported LLM provider: ${llmProvider}. Defaulting to Gemini.`);
+    llm = new Gemini({ model: "gemini-1.5-pro-latest", temperature, apiKey: process.env.GOOGLE_API_KEY });
   }
   return llm;
 }
@@ -35,8 +34,9 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Missing required parameters" }, { status: 400 });
         }
 
+        // Use our new function that pulls from environment variables
         const llm = getLlmFromEnv(settings, node);
-
+        
         let finalInput = typeof input === 'string' ? input : JSON.stringify(input);
 
         if (node.type === 'decision' && node.data.question) {
@@ -73,7 +73,7 @@ Question: ${node.data.question}`;
         const response = await llm.chat({
             messages: [{ role: "user", content: finalInput }]
         });
-
+        
         return NextResponse.json({ output: response.message.content });
 
     } catch (error: any) {
