@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const llamaCloudApiKey = settings?.llamaCloudApiKey;
+    const llamaCloudApiKey = process.env.LLAMACLOUD_API_KEY;
     if (!llamaCloudApiKey) {
       return NextResponse.json(
         { error: 'LlamaCloud API key not found in settings' },
