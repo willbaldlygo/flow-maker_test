@@ -34,51 +34,6 @@ const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
   const [pipelines, setPipelines] = useState<LlamaCloudPipeline[]>([]);
   const [loading, setLoading] = useState(false);
   const [configLoaded, setConfigLoaded] = useState(false);
-  const [apiKey, setApiKey] = useState<string>('');
-  
-  // Load API key from settings
-  const loadApiKey = () => {
-    try {
-      const savedSettings = localStorage.getItem('agent-builder-settings');
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        return settings.llamaCloudApiKey || '';
-      }
-    } catch (error) {
-      console.error('Error loading settings:', error);
-    }
-    return '';
-  };
-  
-  // Load API key on mount and when settings change
-  useEffect(() => {
-    const key = loadApiKey();
-    setApiKey(key);
-    
-    // Listen for settings changes
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'agent-builder-settings') {
-        const key = loadApiKey();
-        setApiKey(key);
-      }
-    };
-    
-    // Check for API key changes periodically (for same-tab changes)
-    const checkApiKey = () => {
-      const currentKey = loadApiKey();
-      if (currentKey !== apiKey) {
-        setApiKey(currentKey);
-      }
-    };
-    
-    const interval = setInterval(checkApiKey, 1000); // Check every second
-    
-    window.addEventListener('storage', handleStorageChange);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
-    };
-  }, [apiKey]);
   
   // Load configuration from localStorage on mount
   useEffect(() => {
@@ -90,7 +45,6 @@ const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
         setSelectedIndex(config.selectedIndex || '');
         setToolName(config.name || '');
         setToolDescription(config.description || '');
-        console.log('Loaded config from localStorage:', config);
       }
       setConfigLoaded(true);
     } catch (error) {
@@ -109,8 +63,6 @@ const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
         name: toolName,
         description: toolDescription,
       };
-
-      console.log('Saving config to localStorage:', config);
 
       // Save to localStorage
       localStorage.setItem(`agent-tool-config-${id}`, JSON.stringify(config));
@@ -139,7 +91,7 @@ const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
   
 
   const fetchLlamaCloudData = async () => {
-    if (!apiKey || toolType !== 'llamacloud-index') return;
+    if (toolType !== 'llamacloud-index') return;
     
     setLoading(true);
     try {
@@ -148,12 +100,11 @@ const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
         }
       });
       
       if (!projectResponse.ok) {
-        throw new Error('Failed to fetch project');
+        throw new Error(`Failed to fetch project: ${await projectResponse.text()}`);
       }
       
       const projectData: LlamaCloudProject = await projectResponse.json();
@@ -163,12 +114,11 @@ const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
         }
       });
       
       if (!pipelinesResponse.ok) {
-        throw new Error('Failed to fetch pipelines');
+        throw new Error(`Failed to fetch pipelines: ${await pipelinesResponse.text()}`);
       }
       
       const pipelinesData: LlamaCloudPipeline[] = await pipelinesResponse.json();
@@ -183,16 +133,7 @@ const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
 
   useEffect(() => {
     fetchLlamaCloudData();
-  }, [toolType, apiKey]);
-
-  // Ensure selectedIndex is preserved after pipelines are loaded
-  useEffect(() => {
-    console.log('Pipelines loaded:', pipelines.length, 'Current selectedIndex:', selectedIndex);
-    if (pipelines.length > 0 && selectedIndex) {
-      const foundPipeline = pipelines.find(p => p.id === selectedIndex);
-      console.log('Found pipeline for selectedIndex:', foundPipeline);
-    }
-  }, [pipelines, selectedIndex]);
+  }, [toolType]);
 
   // Handle tool type change
   const handleToolTypeChange = (newToolType: string) => {
@@ -238,12 +179,11 @@ const AgentToolNode = memo(({ id, data, selected }: AgentToolNodeProps) => {
               <Select 
                 value={pipelines.length > 0 ? selectedIndex : ""} 
                 onValueChange={handleIndexChange} 
-                disabled={loading || !apiKey}
+                disabled={loading}
               >
                 <SelectTrigger className="w-full h-7 text-xs">
                   <SelectValue placeholder={
                     loading ? "Loading..." : 
-                    !apiKey ? "No API key configured" : 
                     pipelines.length === 0 ? "No indexes found" :
                     "Select index"
                   } />
