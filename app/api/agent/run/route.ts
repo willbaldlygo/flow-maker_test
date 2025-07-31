@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Settings, LLM, tool } from 'llamaindex';
+import { LLM, tool, OpenAI, Anthropic, Gemini } from 'llamaindex';
 import { agent } from '@llamaindex/workflow';
 import { z } from 'zod';
-import { getLlm } from '@/lib/llm-utils';
 
+// This helper function remains the same.
 const toCamelCase = (str: string): string => {
   if (!str) return '';
   const words = str.replace(/[^a-zA-Z0-9_]+/g, ' ').split(/[_\s]+/);
@@ -41,10 +41,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // --- MODIFICATION START ---
+    // Force the use of the environment variable for LlamaCloud API Key
     const llamaCloudApiKey = process.env.LLAMACLOUD_API_KEY;
+    // --- MODIFICATION END ---
+
     if (!llamaCloudApiKey) {
       return NextResponse.json(
-        { error: 'LlamaCloud API key not found in settings' },
+        { error: 'LlamaCloud API key not found in environment variables.' },
         { status: 400 },
       );
     }
@@ -84,12 +88,26 @@ export async function POST(req: NextRequest) {
     console.log(`User input for agent: "${userInput}"`);
 
 
-    // 2. Configure LLM
-    const llm = getLlm(settings) as LLM<object, object> & {
-      supportToolCall: true;
-      exec(options: any): any;
-      streamExec(options: any): any;
-    };
+    // --- MODIFICATION START ---
+    // 2. Configure LLM directly from environment variables, ignoring 'settings' from the client
+    const llmProvider = agentNode.data.llm || settings?.defaultLLM || 'gemini-1.5-pro-latest';
+    let llm: LLM;
+    const model = agentNode.data.model || (llmProvider.startsWith("gpt") ? "gpt-4.1-mini" : llmProvider.startsWith("claude") ? "claude-sonnet-4-20250514" : "gemini-1.5-pro-latest");
+    const temperature = agentNode.data.temperature ?? 0.2;
+
+    if (llmProvider.startsWith("gpt")) {
+      llm = new OpenAI({ model, temperature, apiKey: process.env.OPENAI_API_KEY });
+    } else if (llmProvider.startsWith("claude")) {
+      llm = new Anthropic({ model, temperature, apiKey: process.env.ANTHROPIC_API_KEY });
+    } else if (llmProvider.startsWith("gemini")) {
+      llm = new Gemini({ model, temperature, apiKey: process.env.GOOGLE_API_KEY });
+    } else {
+      // Default to Gemini if provider is unknown
+      console.warn(`Unknown LLM provider "${llmProvider}", defaulting to Gemini.`);
+      llm = new Gemini({ model: "gemini-1.5-pro-latest", temperature, apiKey: process.env.GOOGLE_API_KEY });
+    }
+    // --- MODIFICATION END ---
+
 
     // 3. Create dynamic tools for the agent
     const tools: any[] = [];
@@ -187,4 +205,4 @@ export async function POST(req: NextRequest) {
     console.error('Agent execution error:', e);
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
-} 
+}
